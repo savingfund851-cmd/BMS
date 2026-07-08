@@ -15,21 +15,25 @@ function BillPreview() {
   const [totalPaid, setTotalPaid] = useState(0)
 
   useEffect(() => {
-    const fetchData = async () => {
-      const b = await billStore.getById(billId)
+    const fetchData = () => {
+      const b = billStore.getById(billId)
       if (b) {
         setBill(b)
-        setTenant(await tenantStore.getById(b.tenantId))
-        setBuilding(await buildingStore.getById(b.buildingId))
-        setSettings(await settingsStore.get() || {})
+        setTenant(tenantStore.getById(b.tenantId))
+        setBuilding(buildingStore.getById(b.buildingId))
+        setSettings(settingsStore.get() || {})
         
-        const allPayments = await paymentStore.getAll()
+        const allPayments = paymentStore.getAll()
         const bPayments = allPayments.filter(p => p.billId === b.id)
         setPayments(bPayments)
         setTotalPaid(bPayments.reduce((sum, p) => sum + p.amount, 0))
       }
     }
     fetchData()
+
+    const handler = () => fetchData()
+    window.addEventListener('storeUpdated', handler)
+    return () => window.removeEventListener('storeUpdated', handler)
   }, [billId])
 
   const handlePrint = () => { window.print() }

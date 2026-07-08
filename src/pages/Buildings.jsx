@@ -19,14 +19,18 @@ function Buildings() {
       return
     }
     loadBuildings(user) 
+
+    const handler = () => loadBuildings(JSON.parse(localStorage.getItem('tba_current_user') || '{}'  ))
+    window.addEventListener('storeUpdated', handler)
+    return () => window.removeEventListener('storeUpdated', handler)
   }, [navigate])
 
-  const loadBuildings = async (user = currentUser) => {
-    let allBuildings = await buildingStore.getAll()
+  const loadBuildings = (user = currentUser) => {
+    let allBuildings = buildingStore.getAll()
     if (user && user.role === 'manager' && user.buildingId) {
       allBuildings = allBuildings.filter(b => b.id === user.buildingId)
     }
-    const tenants = await tenantStore.getAll()
+    const tenants = tenantStore.getAll()
     const enriched = allBuildings.map(b => ({
       ...b,
       activeTenants: tenants.filter(t => t.buildingId === b.id && t.status === 'active').length
@@ -50,7 +54,6 @@ function Buildings() {
     setShowModal(false)
     setEditingBuilding(null)
     setForm({ name: '', address: '', floors: '', totalFlats: '' })
-    await loadBuildings()
   }
 
   const handleEdit = (building) => {
@@ -62,7 +65,6 @@ function Buildings() {
   const handleDelete = async (id) => {
     if (confirm('Are you sure you want to delete this building? All associated tenants and bills will be lost.')) {
       await buildingStore.remove(id)
-      await loadBuildings()
     }
   }
 

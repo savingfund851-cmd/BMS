@@ -34,13 +34,17 @@ function Dashboard() {
     }
     
     loadDashboardData(user)
+
+    const handler = () => loadDashboardData(user)
+    window.addEventListener('storeUpdated', handler)
+    return () => window.removeEventListener('storeUpdated', handler)
   }, [navigate])
 
-  const loadDashboardData = async (user) => {
-    let buildings = await buildingStore.getAll()
-    let tenants = await tenantStore.getAll()
-    let bills = await billStore.getAll()
-    let payments = await paymentStore.getAll()
+  const loadDashboardData = (user) => {
+    let buildings = buildingStore.getAll()
+    let tenants = tenantStore.getAll()
+    let bills = billStore.getAll()
+    let payments = paymentStore.getAll()
 
     if (user && user.role === 'manager' && user.buildingId) {
       buildings = buildings.filter(b => b.id === user.buildingId)

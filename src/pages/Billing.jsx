@@ -79,7 +79,11 @@ function Billing() {
     // Listen for payments to update bill statuses dynamically
     const handleUpdate = () => loadBills(JSON.parse(localStorage.getItem('tba_current_user') || '{}'))
     window.addEventListener('billsUpdated', handleUpdate)
-    return () => window.removeEventListener('billsUpdated', handleUpdate)
+    window.addEventListener('storeUpdated', handleUpdate)
+    return () => {
+      window.removeEventListener('billsUpdated', handleUpdate)
+      window.removeEventListener('storeUpdated', handleUpdate)
+    }
   }, [])
 
   const loadBills = (user = currentUser) => {
@@ -242,9 +246,11 @@ function Billing() {
       }
       bill.totalAmount = bill.rent + bill.electricity + bill.water + gas + svc + other
 
-      const saved = billStore.add(bill)
-      const newId = saved?.id || saved
-      if (!firstGeneratedBillId) firstGeneratedBillId = newId
+      // Save bill and meter reading asynchronously
+      billStore.add(bill).then(saved => {
+        const newId = saved?.id || (saved + '')
+        if (!firstGeneratedBillId) firstGeneratedBillId = newId
+      })
 
       // Save meter reading record
       meterReadingStore.add({

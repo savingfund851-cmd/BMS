@@ -16,16 +16,16 @@ function TenantReport() {
   const [totals, setTotals] = useState({ billed: 0, paid: 0, due: 0 })
 
   useEffect(() => {
-    const fetchReport = async () => {
-      const t = await tenantStore.getById(tenantId)
+    const fetchReport = () => {
+      const t = tenantStore.getById(tenantId)
       if (t) {
         setTenant(t)
-        setBuilding(await buildingStore.getById(t.buildingId))
-        setSettings(await settingsStore.get())
+        setBuilding(buildingStore.getById(t.buildingId))
+        setSettings(settingsStore.get())
         
-        const allBills = await billStore.getAll()
+        const allBills = billStore.getAll()
         const tBills = allBills.filter(b => b.tenantId === t.id)
-        const allPayments = await paymentStore.getAll()
+        const allPayments = paymentStore.getAll()
         const tPayments = allPayments.filter(p => p.tenantId === t.id)
         
         // Sort chronologically
@@ -41,6 +41,10 @@ function TenantReport() {
       }
     }
     fetchReport()
+
+    const handler = () => fetchReport()
+    window.addEventListener('storeUpdated', handler)
+    return () => window.removeEventListener('storeUpdated', handler)
   }, [tenantId])
 
   if (!tenant) {

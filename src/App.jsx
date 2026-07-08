@@ -17,9 +17,16 @@ import { initializeDefaultData, userStore } from './data/store'
 function App() {
   const [user, setUser] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [lastUpdate, setLastUpdate] = useState(Date.now())
 
   useEffect(() => {
     initializeDefaultData()
+    
+    const handleUpdate = () => {
+      setLastUpdate(Date.now())
+    }
+    window.addEventListener('storeUpdated', handleUpdate)
+
     const checkUser = async () => {
       const savedUser = localStorage.getItem('tba_current_user')
       if (savedUser) {
@@ -39,6 +46,8 @@ function App() {
       }
     }
     checkUser()
+
+    return () => window.removeEventListener('storeUpdated', handleUpdate)
   }, [])
 
   const handleLogin = (userData) => {
@@ -69,7 +78,7 @@ function App() {
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
         />
         <main className="main-content">
-          <Routes>
+          <Routes key={lastUpdate}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/buildings" element={<Buildings />} />
             <Route path="/tenants" element={<Tenants />} />

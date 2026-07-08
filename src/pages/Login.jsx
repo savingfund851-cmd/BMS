@@ -12,6 +12,9 @@ function Login({ onLogin }) {
 
   useEffect(() => {
     setSettings(settingsStore.get() || {})
+    const handler = () => setSettings(settingsStore.get() || {})
+    window.addEventListener('storeUpdated', handler)
+    return () => window.removeEventListener('storeUpdated', handler)
   }, [])
 
   const handleSubmit = (e) => {

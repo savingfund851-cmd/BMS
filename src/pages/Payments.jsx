@@ -30,7 +30,7 @@ function Payments() {
   }
 
   useEffect(() => {
-    const init = async () => {
+    const init = () => {
       const user = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
       setCurrentUser(user)
       if (user.role !== 'superadmin' && user.permissions && !user.permissions.includes('manage_payments')) {
@@ -46,17 +46,25 @@ function Payments() {
       }
       setBuildings(allBuildings)
       setTenants(tenantStore.getAll())
-      await loadPayments(user)
+      loadPayments(user)
       loadPendingBills(user)
     }
     init()
+
+    const handleUpdate = () => {
+      const user = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
+      loadPayments(user)
+      loadPendingBills(user)
+    }
+    window.addEventListener('storeUpdated', handleUpdate)
+    return () => window.removeEventListener('storeUpdated', handleUpdate)
   }, [navigate])
 
-  const loadPayments = async (user = currentUser) => {
-    const allBills = await billStore.getAll()
-    const allTenants = await tenantStore.getAll()
-    const allBuildings = await buildingStore.getAll()
-    let allPayments = await paymentStore.getAll()
+  const loadPayments = (user = currentUser) => {
+    const allBills = billStore.getAll()
+    const allTenants = tenantStore.getAll()
+    const allBuildings = buildingStore.getAll()
+    let allPayments = paymentStore.getAll()
     
     // Pre-filter payments for manager
     if (user && user.role === 'manager' && user.buildingId) {
@@ -120,20 +128,18 @@ function Payments() {
     if (confirm('Are you sure you want to delete this payment record?')) {
       await paymentStore.remove(id)
       
-      const remainingPayments = (await paymentStore.getAll()).filter(p => p.billId === billId)
+      const remainingPayments = paymentStore.getAll().filter(p => p.billId === billId)
       if (remainingPayments.length === 0) {
         await billStore.update(billId, { status: 'pending' })
       } else {
         await billStore.update(billId, { status: 'partial' })
       }
       
-      await loadPayments()
-      loadPendingBills()
       window.dispatchEvent(new Event('billsUpdated'))
     }
   }
 
-  const handlePayment = (e) => {
+  const handlePayment = async (e) => {
     e.preventDefault()
     const bill = billStore.getById(form.billId)
     if (!bill) return
@@ -165,15 +171,17 @@ function Payments() {
       receivedBy: 'Admin',
       note: form.note
     }
-    paymentStore.add(payment)
+    await paymentStore.add(payment)
     
+    // Wait briefly for cache to update, then check totals
+    await new Promise(r => setTimeout(r, 300))
     const allPayments = paymentStore.getAll().filter(p => p.billId === bill.id)
     const totalPaid = allPayments.reduce((s, p) => s + p.amount, 0)
     
     if (totalPaid >= bill.totalAmount) {
-      billStore.update(form.billId, { status: 'paid' })
+      await billStore.update(form.billId, { status: 'paid' })
     } else {
-      billStore.update(form.billId, { status: 'partial' })
+      await billStore.update(form.billId, { status: 'partial' })
     }
 
     setShowModal(false)

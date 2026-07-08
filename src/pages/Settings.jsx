@@ -21,7 +21,7 @@ function Settings() {
   const [currentUser, setCurrentUser] = useState(null)
 
   useEffect(() => {
-    const init = async () => {
+    const init = () => {
       const savedUser = localStorage.getItem('tba_current_user')
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser)
@@ -36,11 +36,19 @@ function Settings() {
         }
       }
 
-      setSettings(await settingsStore.get())
-      setUsers(await userStore.getAll())
-      setBuildings(await buildingStore.getAll())
+      setSettings(settingsStore.get())
+      setUsers(userStore.getAll())
+      setBuildings(buildingStore.getAll())
     }
     init()
+
+    const handler = () => {
+      setSettings(settingsStore.get())
+      setUsers(userStore.getAll())
+      setBuildings(buildingStore.getAll())
+    }
+    window.addEventListener('storeUpdated', handler)
+    return () => window.removeEventListener('storeUpdated', handler)
   }, [])
 
   const handleSave = async () => {
@@ -63,7 +71,7 @@ function Settings() {
     }
     
     await userStore.add(finalForm)
-    setUsers(await userStore.getAll())
+    setUsers(userStore.getAll())
     setShowUserModal(false)
     setUserForm({ 
       username: '', password: '', name: '', role: 'admin', email: '', buildingId: '', 
@@ -108,7 +116,7 @@ function Settings() {
     if (currentUser?.role === 'admin' && targetUser?.role === 'admin' && targetUser?.id !== currentUser?.id) return
     if (confirm('Remove this user?')) {
       await userStore.remove(id)
-      setUsers(await userStore.getAll())
+      setUsers(userStore.getAll())
     }
   }
 

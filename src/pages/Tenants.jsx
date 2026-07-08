@@ -12,15 +12,23 @@ function Tenants() {
   const [rentEnabled, setRentEnabled] = useState(true)
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      const s = await settingsStore.get()
-      setAppSettings(s || {})
-      setGlobalDemandRate(s?.electricityDemandRate ?? 90)
-      const items = s?.billItems || ['rent', 'electricity', 'water', 'gas', 'serviceCharge', 'otherCharges']
-      setBillItems(items)
-      setRentEnabled(items.includes('rent'))
+    const s = settingsStore.get()
+    setAppSettings(s || {})
+    setGlobalDemandRate(s?.electricityDemandRate ?? 90)
+    const items = s?.billItems || ['rent', 'electricity', 'water', 'gas', 'serviceCharge', 'otherCharges']
+    setBillItems(items)
+    setRentEnabled(items.includes('rent'))
+
+    const handler = () => {
+      const s2 = settingsStore.get()
+      setAppSettings(s2 || {})
+      setGlobalDemandRate(s2?.electricityDemandRate ?? 90)
+      const items2 = s2?.billItems || ['rent', 'electricity', 'water', 'gas', 'serviceCharge', 'otherCharges']
+      setBillItems(items2)
+      setRentEnabled(items2.includes('rent'))
     }
-    fetchSettings()
+    window.addEventListener('storeUpdated', handler)
+    return () => window.removeEventListener('storeUpdated', handler)
   }, [])
   const [tenants, setTenants] = useState([])
   const [buildings, setBuildings] = useState([])
@@ -40,7 +48,7 @@ function Tenants() {
   })
 
   useEffect(() => {
-    const init = async () => {
+    const init = () => {
       const user = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
       setCurrentUser(user)
       if (user.role !== 'superadmin' && user.permissions && !user.permissions.includes('manage_tenants')) {
@@ -48,23 +56,27 @@ function Tenants() {
         return
       }
       
-      let allBuildings = await buildingStore.getAll()
+      let allBuildings = buildingStore.getAll()
       if (user.role === 'manager' && user.buildingId) {
         allBuildings = allBuildings.filter(b => b.id === user.buildingId)
         setFilterBuilding(user.buildingId)
       }
       setBuildings(allBuildings)
-      await loadTenants(user)
+      loadTenants(user)
     }
     init()
+
+    const handler = () => loadTenants(JSON.parse(localStorage.getItem('tba_current_user') || '{}'))
+    window.addEventListener('storeUpdated', handler)
+    return () => window.removeEventListener('storeUpdated', handler)
   }, [navigate])
 
-  const loadTenants = async (user = currentUser) => {
-    let all = await tenantStore.getAll()
+  const loadTenants = (user = currentUser) => {
+    let all = tenantStore.getAll()
     if (user && user.role === 'manager' && user.buildingId) {
       all = all.filter(t => t.buildingId === user.buildingId)
     }
-    const allBuildings = await buildingStore.getAll()
+    const allBuildings = buildingStore.getAll()
     const enriched = all.map(t => ({
       ...t,
       buildingName: allBuildings.find(b => b.id === t.buildingId)?.name || 'Unknown'
@@ -119,7 +131,6 @@ function Tenants() {
       electricityRate: '', electricityStartUnit: '', electricityStartDate: '', sectionLoad: '',
       waterRate: '', waterStartUnit: '', waterStartDate: ''
     })
-    await loadTenants()
   }
 
   const resetForm = () => {
@@ -153,7 +164,6 @@ function Tenants() {
   const handleDelete = async (id) => {
     if (confirm('Are you sure you want to delete this tenant?')) {
       await tenantStore.remove(id)
-      await loadTenants()
     }
   }
 
