@@ -65,15 +65,15 @@ function removeSync(key, id) {
 }
 
 // ---------------------------------------------------------------------------
-// Async wrappers for compatibility with the advanced UI
+// Sync wrappers for the advanced UI
 // ---------------------------------------------------------------------------
 
 const createAsyncStore = (key) => ({
-  getAll: async () => getAllSync(key),
-  getById: async (id) => getByIdSync(key, id),
-  add: async (item) => addSync(key, item),
-  update: async (id, updates) => updateSync(key, id, updates),
-  remove: async (id) => removeSync(key, id)
+  getAll: () => getAllSync(key),
+  getById: (id) => getByIdSync(key, id),
+  add: (item) => addSync(key, item),
+  update: (id, updates) => updateSync(key, id, updates),
+  remove: (id) => removeSync(key, id)
 });
 
 export const buildingStore = createAsyncStore(KEYS.BUILDINGS);
@@ -84,7 +84,7 @@ export const meterReadingStore = createAsyncStore(KEYS.METER_READINGS);
 
 export const userStore = {
   ...createAsyncStore(KEYS.USERS),
-  authenticate: async (username, password) => {
+  authenticate: (username, password) => {
     const users = getAllSync(KEYS.USERS);
     const user = users.find(u => u.username === username && u.password === password);
     return user || null;
@@ -92,7 +92,7 @@ export const userStore = {
 };
 
 export const settingsStore = {
-  get: async () => {
+  get: () => {
     try {
       const data = localStorage.getItem(KEYS.SETTINGS);
       return data ? JSON.parse(data) : {};
@@ -100,7 +100,7 @@ export const settingsStore = {
       return {};
     }
   },
-  save: async (settings) => {
+  save: (settings) => {
     localStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings));
     return settings;
   }
