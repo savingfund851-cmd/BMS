@@ -20,8 +20,9 @@ function Header({ user, onToggleSidebar }) {
 
   // Build notifications from bills
   useEffect(() => {
-    const bills = billStore.getAll()
-    const tenants = tenantStore.getAll()
+    const fetchNotifs = async () => {
+      const bills = await billStore.getAll()
+      const tenants = await tenantStore.getAll()
     const now = new Date()
     const notifs = []
 
@@ -63,21 +64,25 @@ function Header({ user, onToggleSidebar }) {
       }
     })
 
-    setNotifications(notifs.slice(0, 20))
+      setNotifications(notifs.slice(0, 20))
+    }
+    fetchNotifs()
   }, [])
 
   // Search logic
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([])
-      setShowSearch(false)
-      return
-    }
-    const q = searchQuery.toLowerCase()
-    const results = []
+    const doSearch = async () => {
+      if (!searchQuery.trim()) {
+        setSearchResults([])
+        setShowSearch(false)
+        return
+      }
+      const q = searchQuery.toLowerCase()
+      const results = []
 
-    // Search tenants
-    tenantStore.getAll().forEach(t => {
+      // Search tenants
+      const allTenants = await tenantStore.getAll()
+      allTenants.forEach(t => {
       if (
         t.name?.toLowerCase().includes(q) ||
         t.flat?.toLowerCase().includes(q) ||
@@ -95,7 +100,8 @@ function Header({ user, onToggleSidebar }) {
     })
 
     // Search buildings
-    buildingStore.getAll().forEach(b => {
+    const allBuildings = await buildingStore.getAll()
+    allBuildings.forEach(b => {
       if (b.name?.toLowerCase().includes(q) || b.address?.toLowerCase().includes(q)) {
         results.push({
           type: 'building',
@@ -108,9 +114,9 @@ function Header({ user, onToggleSidebar }) {
     })
 
     // Search bills by tenant name
-    const tenants = tenantStore.getAll()
-    billStore.getAll().forEach(b => {
-      const tenant = tenants.find(t => t.id === b.tenantId)
+    const allBills = await billStore.getAll()
+    allBills.forEach(b => {
+      const tenant = allTenants.find(t => t.id === b.tenantId)
       if (!tenant) return
       if (
         tenant.name?.toLowerCase().includes(q) ||
@@ -127,8 +133,10 @@ function Header({ user, onToggleSidebar }) {
       }
     })
 
-    setSearchResults(results.slice(0, 8))
-    setShowSearch(results.length > 0)
+      setSearchResults(results.slice(0, 8))
+      setShowSearch(results.length > 0)
+    }
+    doSearch()
   }, [searchQuery])
 
   // Close dropdowns on outside click

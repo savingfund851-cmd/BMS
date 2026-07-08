@@ -20,17 +20,25 @@ function App() {
 
   useEffect(() => {
     initializeDefaultData()
-    const savedUser = localStorage.getItem('tba_current_user')
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser)
-      const freshUser = userStore.getById(parsedUser.id)
-      if (freshUser) {
-        setUser(freshUser)
-        localStorage.setItem('tba_current_user', JSON.stringify(freshUser))
-      } else {
-        setUser(parsedUser)
+    const checkUser = async () => {
+      const savedUser = localStorage.getItem('tba_current_user')
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser)
+        try {
+          const freshUser = await userStore.getById(parsedUser.id)
+          if (freshUser) {
+            setUser(freshUser)
+            localStorage.setItem('tba_current_user', JSON.stringify(freshUser))
+          } else {
+            setUser(parsedUser)
+          }
+        } catch (err) {
+          console.error("Error fetching user", err)
+          setUser(parsedUser)
+        }
       }
     }
+    checkUser()
   }, [])
 
   const handleLogin = (userData) => {

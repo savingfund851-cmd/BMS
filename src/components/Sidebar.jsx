@@ -7,10 +7,11 @@ import {
 import { settingsStore } from '../data/store'
 
 function Sidebar({ user, isOpen, onToggle, onLogout }) {
-  const [settings, setSettings] = useState(settingsStore.get() || {})
+  const [settings, setSettings] = useState({})
 
   useEffect(() => {
-    const handleSettings = () => setSettings(settingsStore.get() || {})
+    const handleSettings = async () => setSettings(await settingsStore.get() || {})
+    handleSettings()
     window.addEventListener('settingsUpdated', handleSettings)
     return () => window.removeEventListener('settingsUpdated', handleSettings)
   }, [])

@@ -21,12 +21,12 @@ function Buildings() {
     loadBuildings(user) 
   }, [navigate])
 
-  const loadBuildings = (user = currentUser) => {
-    let allBuildings = buildingStore.getAll()
+  const loadBuildings = async (user = currentUser) => {
+    let allBuildings = await buildingStore.getAll()
     if (user && user.role === 'manager' && user.buildingId) {
       allBuildings = allBuildings.filter(b => b.id === user.buildingId)
     }
-    const tenants = tenantStore.getAll()
+    const tenants = await tenantStore.getAll()
     const enriched = allBuildings.map(b => ({
       ...b,
       activeTenants: tenants.filter(t => t.buildingId === b.id && t.status === 'active').length
@@ -34,7 +34,7 @@ function Buildings() {
     setBuildings(enriched)
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     const data = {
       name: form.name,
@@ -43,14 +43,14 @@ function Buildings() {
       totalFlats: parseInt(form.totalFlats) || 0
     }
     if (editingBuilding) {
-      buildingStore.update(editingBuilding.id, data)
+      await buildingStore.update(editingBuilding.id, data)
     } else {
-      buildingStore.add(data)
+      await buildingStore.add(data)
     }
     setShowModal(false)
     setEditingBuilding(null)
     setForm({ name: '', address: '', floors: '', totalFlats: '' })
-    loadBuildings()
+    await loadBuildings()
   }
 
   const handleEdit = (building) => {
@@ -59,10 +59,10 @@ function Buildings() {
     setShowModal(true)
   }
 
-  const handleDelete = (id) => {
-    if (confirm('Are you sure you want to delete this building?')) {
-      buildingStore.remove(id)
-      loadBuildings()
+  const handleDelete = async (id) => {
+    if (confirm('Are you sure you want to delete this building? All associated tenants and bills will be lost.')) {
+      await buildingStore.remove(id)
+      await loadBuildings()
     }
   }
 

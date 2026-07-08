@@ -16,26 +16,31 @@ function TenantReport() {
   const [totals, setTotals] = useState({ billed: 0, paid: 0, due: 0 })
 
   useEffect(() => {
-    const t = tenantStore.getById(tenantId)
-    if (t) {
-      setTenant(t)
-      setBuilding(buildingStore.getById(t.buildingId))
-      setSettings(settingsStore.get())
-      
-      const allBills = billStore.getAll().filter(b => b.tenantId === t.id)
-      const allPayments = paymentStore.getAll().filter(p => p.tenantId === t.id)
-      
-      // Sort chronologically
-      allBills.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      allPayments.sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate))
-      
-      setBills(allBills)
-      setPayments(allPayments)
-      
-      const billed = allBills.reduce((sum, b) => sum + b.totalAmount, 0)
-      const paid = allPayments.reduce((sum, p) => sum + p.amount, 0)
-      setTotals({ billed, paid, due: Math.max(0, billed - paid) })
+    const fetchReport = async () => {
+      const t = await tenantStore.getById(tenantId)
+      if (t) {
+        setTenant(t)
+        setBuilding(await buildingStore.getById(t.buildingId))
+        setSettings(await settingsStore.get())
+        
+        const allBills = await billStore.getAll()
+        const tBills = allBills.filter(b => b.tenantId === t.id)
+        const allPayments = await paymentStore.getAll()
+        const tPayments = allPayments.filter(p => p.tenantId === t.id)
+        
+        // Sort chronologically
+        tBills.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        tPayments.sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate))
+        
+        setBills(tBills)
+        setPayments(tPayments)
+        
+        const billed = tBills.reduce((sum, b) => sum + b.totalAmount, 0)
+        const paid = tPayments.reduce((sum, p) => sum + p.amount, 0)
+        setTotals({ billed, paid, due: Math.max(0, billed - paid) })
+      }
     }
+    fetchReport()
   }, [tenantId])
 
   if (!tenant) {

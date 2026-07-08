@@ -30,43 +30,46 @@ function Payments() {
   }
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
-    setCurrentUser(user)
-    if (user.role !== 'superadmin' && user.permissions && !user.permissions.includes('manage_payments')) {
-      navigate('/')
-      return
-    }
+    const init = async () => {
+      const user = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
+      setCurrentUser(user)
+      if (user.role !== 'superadmin' && user.permissions && !user.permissions.includes('manage_payments')) {
+        navigate('/')
+        return
+      }
 
-    let allBuildings = buildingStore.getAll()
-    if (user.role === 'manager' && user.buildingId) {
-      allBuildings = allBuildings.filter(b => b.id === user.buildingId)
-      setFilterBuilding(user.buildingId)
-      setModalBuilding(user.buildingId)
+      let allBuildings = buildingStore.getAll()
+      if (user.role === 'manager' && user.buildingId) {
+        allBuildings = allBuildings.filter(b => b.id === user.buildingId)
+        setFilterBuilding(user.buildingId)
+        setModalBuilding(user.buildingId)
+      }
+      setBuildings(allBuildings)
+      setTenants(tenantStore.getAll())
+      await loadPayments(user)
+      loadPendingBills(user)
     }
-    setBuildings(allBuildings)
-    setTenants(tenantStore.getAll())
-    loadPayments(user)
-    loadPendingBills(user)
+    init()
   }, [navigate])
 
-  const loadPayments = (user = currentUser) => {
-    let all = paymentStore.getAll()
-    const allTenants = tenantStore.getAll()
-    const allBills = billStore.getAll()
-    const allBuildings = buildingStore.getAll()
+  const loadPayments = async (user = currentUser) => {
+    const allBills = await billStore.getAll()
+    const allTenants = await tenantStore.getAll()
+    const allBuildings = await buildingStore.getAll()
+    let allPayments = await paymentStore.getAll()
     
     // Pre-filter payments for manager
     if (user && user.role === 'manager' && user.buildingId) {
-      all = all.filter(p => {
-        const bill = allBills.find(b => b.id === p.billId)
-        return bill && bill.buildingId === user.buildingId
+      allPayments = allPayments.filter(p => {
+        const tenant = allTenants.find(t => t.id === p.tenantId)
+        return tenant && tenant.buildingId === user.buildingId
       })
     }
     
-    const enriched = all.map(p => {
+    const enriched = allPayments.map(p => {
       const tenant = allTenants.find(t => t.id === p.tenantId)
       const bill = allBills.find(b => b.id === p.billId)
-      const building = bill ? allBuildings.find(b => b.id === bill.buildingId) : null
+      const building = bill ? allBuildings.find(b => b.id === bill.buildingId) : (tenant ? allBuildings.find(b => b.id === tenant.buildingId) : null)
       return {
         ...p,
         tenantName: tenant?.name || 'Unknown',
@@ -113,6 +116,23 @@ function Payments() {
     setPendingBills(pending)
   }
 
+  const handleDelete = async (id, billId) => {
+    if (confirm('Are you sure you want to delete this payment record?')) {
+      await paymentStore.remove(id)
+      
+      const remainingPayments = (await paymentStore.getAll()).filter(p => p.billId === billId)
+      if (remainingPayments.length === 0) {
+        await billStore.update(billId, { status: 'pending' })
+      } else {
+        await billStore.update(billId, { status: 'partial' })
+      }
+      
+      await loadPayments()
+      loadPendingBills()
+      window.dispatchEvent(new Event('billsUpdated'))
+    }
+  }
+
   const handlePayment = (e) => {
     e.preventDefault()
     const bill = billStore.getById(form.billId)
@@ -147,7 +167,6 @@ function Payments() {
     }
     paymentStore.add(payment)
     
-    // Check new total paid
     const allPayments = paymentStore.getAll().filter(p => p.billId === bill.id)
     const totalPaid = allPayments.reduce((s, p) => s + p.amount, 0)
     

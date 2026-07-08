@@ -6,10 +6,22 @@ import { getInitials } from '../data/helpers'
 
 function Tenants() {
   const navigate = useNavigate()
-  const appSettings = settingsStore.get() || {}
-  const globalDemandRate = appSettings.electricityDemandRate ?? 90
-  const billItems = appSettings.billItems || ['rent', 'electricity', 'water', 'gas', 'serviceCharge', 'otherCharges']
-  const rentEnabled = billItems.includes('rent')
+  const [appSettings, setAppSettings] = useState({})
+  const [globalDemandRate, setGlobalDemandRate] = useState(90)
+  const [billItems, setBillItems] = useState(['rent', 'electricity', 'water', 'gas', 'serviceCharge', 'otherCharges'])
+  const [rentEnabled, setRentEnabled] = useState(true)
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const s = await settingsStore.get()
+      setAppSettings(s || {})
+      setGlobalDemandRate(s?.electricityDemandRate ?? 90)
+      const items = s?.billItems || ['rent', 'electricity', 'water', 'gas', 'serviceCharge', 'otherCharges']
+      setBillItems(items)
+      setRentEnabled(items.includes('rent'))
+    }
+    fetchSettings()
+  }, [])
   const [tenants, setTenants] = useState([])
   const [buildings, setBuildings] = useState([])
   const [currentUser, setCurrentUser] = useState(null)
@@ -28,28 +40,31 @@ function Tenants() {
   })
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
-    setCurrentUser(user)
-    if (user.role !== 'superadmin' && user.permissions && !user.permissions.includes('manage_tenants')) {
-      navigate('/')
-      return
+    const init = async () => {
+      const user = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
+      setCurrentUser(user)
+      if (user.role !== 'superadmin' && user.permissions && !user.permissions.includes('manage_tenants')) {
+        navigate('/')
+        return
+      }
+      
+      let allBuildings = await buildingStore.getAll()
+      if (user.role === 'manager' && user.buildingId) {
+        allBuildings = allBuildings.filter(b => b.id === user.buildingId)
+        setFilterBuilding(user.buildingId)
+      }
+      setBuildings(allBuildings)
+      await loadTenants(user)
     }
-    
-    let allBuildings = buildingStore.getAll()
-    if (user.role === 'manager' && user.buildingId) {
-      allBuildings = allBuildings.filter(b => b.id === user.buildingId)
-      setFilterBuilding(user.buildingId)
-    }
-    setBuildings(allBuildings)
-    loadTenants(user)
+    init()
   }, [navigate])
 
-  const loadTenants = (user = currentUser) => {
-    let all = tenantStore.getAll()
+  const loadTenants = async (user = currentUser) => {
+    let all = await tenantStore.getAll()
     if (user && user.role === 'manager' && user.buildingId) {
       all = all.filter(t => t.buildingId === user.buildingId)
     }
-    const allBuildings = buildingStore.getAll()
+    const allBuildings = await buildingStore.getAll()
     const enriched = all.map(t => ({
       ...t,
       buildingName: allBuildings.find(b => b.id === t.buildingId)?.name || 'Unknown'
@@ -65,23 +80,46 @@ function Tenants() {
     return matchesBuilding && matchesSearch
   })
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    
     const data = {
-      ...form,
-      floor: parseInt(form.floor) || 0,
-      monthlyRent: parseInt(form.monthlyRent) || 0,
-      advanceDeposit: parseInt(form.advanceDeposit) || 0
+      name: form.name,
+      buildingId: form.buildingId,
+      flat: form.flat,
+      floor: parseInt(form.floor) || 1,
+      phone: form.phone,
+      email: form.email,
+      monthlyRent: parseFloat(form.monthlyRent) || 0,
+      advanceDeposit: parseFloat(form.advanceDeposit) || 0,
+      moveInDate: form.moveInDate,
+      status: form.status,
+      // electricity
+      electricityRate: parseFloat(form.electricityRate) || 0,
+      electricityStartUnit: parseFloat(form.electricityStartUnit) || 0,
+      electricityStartDate: form.electricityStartDate,
+      sectionLoad: parseFloat(form.sectionLoad) || 0,
+      // water
+      waterRate: parseFloat(form.waterRate) || 0,
+      waterStartUnit: parseFloat(form.waterStartUnit) || 0,
+      waterStartDate: form.waterStartDate,
     }
+
     if (editingTenant) {
-      tenantStore.update(editingTenant.id, data)
+      await tenantStore.update(editingTenant.id, data)
     } else {
-      tenantStore.add(data)
+      await tenantStore.add(data)
     }
+    
     setShowModal(false)
     setEditingTenant(null)
-    resetForm()
-    loadTenants()
+    setForm({ 
+      name: '', buildingId: '', flat: '', floor: '', phone: '', email: '', 
+      monthlyRent: '', advanceDeposit: '', moveInDate: '', status: 'active',
+      electricityRate: '', electricityStartUnit: '', electricityStartDate: '', sectionLoad: '',
+      waterRate: '', waterStartUnit: '', waterStartDate: ''
+    })
+    await loadTenants()
   }
 
   const resetForm = () => {
@@ -112,10 +150,10 @@ function Tenants() {
     setShowModal(true)
   }
 
-  const handleDelete = (id) => {
-    if (confirm('Are you sure you want to remove this tenant?')) {
-      tenantStore.remove(id)
-      loadTenants()
+  const handleDelete = async (id) => {
+    if (confirm('Are you sure you want to delete this tenant?')) {
+      await tenantStore.remove(id)
+      await loadTenants()
     }
   }
 

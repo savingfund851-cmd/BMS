@@ -21,35 +21,36 @@ function Settings() {
   const [currentUser, setCurrentUser] = useState(null)
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('tba_current_user')
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser)
-      setCurrentUser(parsedUser)
-      
-      const hasPerm = (perm) => parsedUser.role === 'superadmin' || (parsedUser.permissions && parsedUser.permissions.includes(perm))
-      
-      if (!hasPerm('manage_settings_general')) {
-        if (hasPerm('manage_settings_billing')) setActiveTab('billing')
-        else if (hasPerm('manage_settings_users')) setActiveTab('users')
-        else if (hasPerm('manage_settings_appearance')) setActiveTab('appearance')
+    const init = async () => {
+      const savedUser = localStorage.getItem('tba_current_user')
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser)
+        setCurrentUser(parsedUser)
+        
+        const hasPerm = (perm) => parsedUser.role === 'superadmin' || (parsedUser.permissions && parsedUser.permissions.includes(perm))
+        
+        if (!hasPerm('manage_settings_general')) {
+          if (hasPerm('manage_settings_billing')) setActiveTab('billing')
+          else if (hasPerm('manage_settings_users')) setActiveTab('users')
+          else if (hasPerm('manage_settings_appearance')) setActiveTab('appearance')
+        }
       }
-    }
 
-    setSettings(settingsStore.get())
-    setUsers(userStore.getAll())
-    setBuildings(buildingStore.getAll())
+      setSettings(await settingsStore.get())
+      setUsers(await userStore.getAll())
+      setBuildings(await buildingStore.getAll())
+    }
+    init()
   }, [])
 
-  const handleSave = () => {
-    settingsStore.save(settings)
+  const handleSave = async () => {
+    await settingsStore.save(settings)
     window.dispatchEvent(new Event('settingsUpdated'))
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
 
-
-
-  const handleAddUser = (e) => {
+  const handleAddUser = async (e) => {
     e.preventDefault()
     
     // If admin is creating user, ensure they can only grant permissions they themselves have
@@ -61,8 +62,8 @@ function Settings() {
       if (finalForm.role === 'superadmin') finalForm.role = 'admin'
     }
     
-    userStore.add(finalForm)
-    setUsers(userStore.getAll())
+    await userStore.add(finalForm)
+    setUsers(await userStore.getAll())
     setShowUserModal(false)
     setUserForm({ 
       username: '', password: '', name: '', role: 'admin', email: '', buildingId: '', 
@@ -99,15 +100,15 @@ function Settings() {
     })
   }
 
-  const handleDeleteUser = (id) => {
+  const handleDeleteUser = async (id) => {
     const targetUser = users.find(u => u.id === id)
     // Admin cannot delete superadmin
     if (currentUser?.role !== 'superadmin' && targetUser?.role === 'superadmin') return
     // Admin cannot delete other admins unless superadmin
     if (currentUser?.role === 'admin' && targetUser?.role === 'admin' && targetUser?.id !== currentUser?.id) return
     if (confirm('Remove this user?')) {
-      userStore.remove(id)
-      setUsers(userStore.getAll())
+      await userStore.remove(id)
+      setUsers(await userStore.getAll())
     }
   }
 
