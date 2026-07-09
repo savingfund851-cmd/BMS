@@ -108,9 +108,11 @@ function Buildings() {
                   <button className="btn-icon" onClick={() => handleEdit(building)} title="Edit">
                     <Edit3 size={15} />
                   </button>
-                  <button className="btn-icon danger" onClick={() => handleDelete(building.id)} title="Delete">
-                    <Trash2 size={15} />
-                  </button>
+                  {currentUser?.role === 'superadmin' && (
+                    <button className="btn-icon danger" onClick={() => handleDelete(building.id)} title="Delete">
+                      <Trash2 size={15} />
+                    </button>
+                  )}
                 </div>
               </div>
               <h3 className="building-name">{building.name}</h3>

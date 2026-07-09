@@ -22,6 +22,9 @@ function BillPreview() {
   const [authError, setAuthError] = useState('')
   const [showEditModal, setShowEditModal] = useState(false)
   const [editForm, setEditForm] = useState({
+    month: '',
+    year: '',
+    billType: '',
     electricityCurrentReading: '',
     waterCurrentReading: '',
     rent: 0, electricity: 0, water: 0, gas: 0, serviceCharge: 0, otherCharges: 0
@@ -71,6 +74,9 @@ function BillPreview() {
     if (verified) {
       setShowAuthModal(false)
       setEditForm({
+        month: bill.month || '',
+        year: bill.year || '',
+        billType: bill.billType || 'both',
         electricityCurrentReading: bill.electricityCurrentReading ?? '',
         waterCurrentReading: bill.waterCurrentReading ?? '',
         rent: bill.rent || 0,
@@ -124,25 +130,29 @@ function BillPreview() {
     e.preventDefault()
     
     await billStore.update(bill.id, {
+      month: editForm.month,
+      year: parseInt(editForm.year) || bill.year,
+      billType: editForm.billType,
+
       rent: parseFloat(editForm.rent) || 0,
       gas: parseFloat(editForm.gas) || 0,
       serviceCharge: parseFloat(editForm.serviceCharge) || 0,
       otherCharges: parseFloat(editForm.otherCharges) || 0,
       
-      electricityCurrentReading: elecCalc ? (parseFloat(editForm.electricityCurrentReading) || 0) : bill.electricityCurrentReading,
-      electricityUnits: elecCalc ? elecCalc.units : bill.electricityUnits,
-      electricityUnitCost: elecCalc ? elecCalc.unitCost : bill.electricityUnitCost,
-      electricityDemandCharge: elecCalc ? elecCalc.demandCharge : bill.electricityDemandCharge,
-      electricityVat: elecCalc ? Math.round(elecCalc.vat) : bill.electricityVat,
-      electricity: displayElectricity,
+      electricityCurrentReading: elecCalc && editForm.billType !== 'water' ? (parseFloat(editForm.electricityCurrentReading) || 0) : bill.electricityCurrentReading,
+      electricityUnits: elecCalc && editForm.billType !== 'water' ? elecCalc.units : bill.electricityUnits,
+      electricityUnitCost: elecCalc && editForm.billType !== 'water' ? elecCalc.unitCost : bill.electricityUnitCost,
+      electricityDemandCharge: elecCalc && editForm.billType !== 'water' ? elecCalc.demandCharge : bill.electricityDemandCharge,
+      electricityVat: elecCalc && editForm.billType !== 'water' ? Math.round(elecCalc.vat) : bill.electricityVat,
+      electricity: editForm.billType === 'water' ? 0 : displayElectricity,
 
-      waterCurrentReading: waterCalc ? (parseFloat(editForm.waterCurrentReading) || 0) : bill.waterCurrentReading,
-      waterUnits: waterCalc ? waterCalc.units : bill.waterUnits,
-      waterUnitCost: waterCalc ? waterCalc.subTotal : bill.waterUnitCost,
-      waterVat: waterCalc ? Math.round(waterCalc.vat) : bill.waterVat,
-      water: displayWater,
+      waterCurrentReading: waterCalc && editForm.billType !== 'electricity' ? (parseFloat(editForm.waterCurrentReading) || 0) : bill.waterCurrentReading,
+      waterUnits: waterCalc && editForm.billType !== 'electricity' ? waterCalc.units : bill.waterUnits,
+      waterUnitCost: waterCalc && editForm.billType !== 'electricity' ? waterCalc.subTotal : bill.waterUnitCost,
+      waterVat: waterCalc && editForm.billType !== 'electricity' ? Math.round(waterCalc.vat) : bill.waterVat,
+      water: editForm.billType === 'electricity' ? 0 : displayWater,
 
-      totalAmount: editTotal
+      totalAmount: (parseFloat(editForm.rent) || 0) + (editForm.billType === 'water' ? 0 : displayElectricity) + (editForm.billType === 'electricity' ? 0 : displayWater) + (parseFloat(editForm.gas) || 0) + (parseFloat(editForm.serviceCharge) || 0) + (parseFloat(editForm.otherCharges) || 0)
     })
     
     setShowEditModal(false)
@@ -729,48 +739,75 @@ function BillPreview() {
             </div>
             <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
               <form onSubmit={handleEditSubmit}>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Month</label>
+                    <select className="form-select" value={editForm.month} onChange={e => setEditForm({...editForm, month: e.target.value})}>
+                      {['January','February','March','April','May','June','July','August','September','October','November','December'].map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Year</label>
+                    <input type="number" className="form-input" value={editForm.year} onChange={e => setEditForm({...editForm, year: e.target.value})} min="2024" max="2030" />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Bill Type</label>
+                  <select className="form-select" value={editForm.billType} onChange={e => setEditForm({...editForm, billType: e.target.value})}>
+                    <option value="both">Electricity + Washa</option>
+                    <option value="electricity">Electricity Only</option>
+                    <option value="water">Washa Only</option>
+                  </select>
+                </div>
                 <div className="form-group">
                   <label className="form-label">Rent</label>
                   <input type="number" className="form-input" value={editForm.rent} onChange={e => setEditForm({...editForm, rent: e.target.value})} min="0" step="0.01" />
                 </div>
-                {bill.electricityPreviousReading != null ? (
-                  <div className="form-group">
-                    <label className="form-label">Electricity Current Reading</label>
-                    <input type="number" className="form-input" value={editForm.electricityCurrentReading} onChange={e => setEditForm({...editForm, electricityCurrentReading: e.target.value})} min="0" step="0.01" />
-                    <small style={{ color: 'var(--text-muted)' }}>
-                      Prev: {bill.electricityPreviousReading} • Used: {elecCalc?.units || 0} kWh • Auto Total: ৳{displayElectricity.toLocaleString()}
-                    </small>
-                  </div>
-                ) : (
-                  <div className="form-group">
-                    <label className="form-label">Electricity Total</label>
-                    <input type="number" className="form-input" value={editForm.electricity} onChange={e => setEditForm({...editForm, electricity: e.target.value})} min="0" step="0.01" />
-                    <small style={{ color: 'var(--text-muted)' }}>Includes Usage, Demand Charge & VAT</small>
-                  </div>
+                {editForm.billType !== 'water' && (
+                  bill.electricityPreviousReading != null ? (
+                    <div className="form-group">
+                      <label className="form-label">Electricity Current Reading</label>
+                      <input type="number" className="form-input" value={editForm.electricityCurrentReading} onChange={e => setEditForm({...editForm, electricityCurrentReading: e.target.value})} min="0" step="0.01" />
+                      <small style={{ color: 'var(--text-muted)' }}>
+                        Prev: {bill.electricityPreviousReading} • Used: {elecCalc?.units || 0} kWh • Auto Total: ৳{displayElectricity.toLocaleString()}
+                      </small>
+                    </div>
+                  ) : (
+                    <div className="form-group">
+                      <label className="form-label">Electricity Total</label>
+                      <input type="number" className="form-input" value={editForm.electricity} onChange={e => setEditForm({...editForm, electricity: e.target.value})} min="0" step="0.01" />
+                      <small style={{ color: 'var(--text-muted)' }}>Includes Usage, Demand Charge & VAT</small>
+                    </div>
+                  )
                 )}
 
-                {bill.waterPreviousReading != null ? (
-                  <div className="form-group">
-                    <label className="form-label">Water Current Reading</label>
-                    <input type="number" className="form-input" value={editForm.waterCurrentReading} onChange={e => setEditForm({...editForm, waterCurrentReading: e.target.value})} min="0" step="0.01" />
-                    <small style={{ color: 'var(--text-muted)' }}>
-                      Prev: {bill.waterPreviousReading} • Used: {waterCalc?.units || 0} unit • Auto Total: ৳{displayWater.toLocaleString()}
-                    </small>
-                  </div>
-                ) : (
-                  <div className="form-group">
-                    <label className="form-label">Water Total</label>
-                    <input type="number" className="form-input" value={editForm.water} onChange={e => setEditForm({...editForm, water: e.target.value})} min="0" step="0.01" />
-                    <small style={{ color: 'var(--text-muted)' }}>Includes Usage & VAT</small>
-                  </div>
+                {editForm.billType !== 'electricity' && (
+                  bill.waterPreviousReading != null ? (
+                    <div className="form-group">
+                      <label className="form-label">Water Current Reading</label>
+                      <input type="number" className="form-input" value={editForm.waterCurrentReading} onChange={e => setEditForm({...editForm, waterCurrentReading: e.target.value})} min="0" step="0.01" />
+                      <small style={{ color: 'var(--text-muted)' }}>
+                        Prev: {bill.waterPreviousReading} • Used: {waterCalc?.units || 0} unit • Auto Total: ৳{displayWater.toLocaleString()}
+                      </small>
+                    </div>
+                  ) : (
+                    <div className="form-group">
+                      <label className="form-label">Water Total</label>
+                      <input type="number" className="form-input" value={editForm.water} onChange={e => setEditForm({...editForm, water: e.target.value})} min="0" step="0.01" />
+                      <small style={{ color: 'var(--text-muted)' }}>Includes Usage & VAT</small>
+                    </div>
+                  )
                 )}
-                <div className="form-group">
-                  <label className="form-label">Gas Bill</label>
-                  <input type="number" className="form-input" value={editForm.gas} onChange={e => setEditForm({...editForm, gas: e.target.value})} min="0" step="0.01" />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Service Charge</label>
-                  <input type="number" className="form-input" value={editForm.serviceCharge} onChange={e => setEditForm({...editForm, serviceCharge: e.target.value})} min="0" step="0.01" />
+                
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Gas Bill</label>
+                    <input type="number" className="form-input" value={editForm.gas} onChange={e => setEditForm({...editForm, gas: e.target.value})} min="0" step="0.01" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Service Charge</label>
+                    <input type="number" className="form-input" value={editForm.serviceCharge} onChange={e => setEditForm({...editForm, serviceCharge: e.target.value})} min="0" step="0.01" />
+                  </div>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Other Charges</label>

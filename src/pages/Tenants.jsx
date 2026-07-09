@@ -221,7 +221,9 @@ function Tenants() {
               </div>
               <div className="tenant-card-actions">
                 <button className="btn-icon" onClick={() => handleEdit(tenant)} title="Edit"><Edit3 size={14} /></button>
-                <button className="btn-icon danger" onClick={() => handleDelete(tenant.id)} title="Delete"><Trash2 size={14} /></button>
+                {currentUser?.role === 'superadmin' && (
+                  <button className="btn-icon danger" onClick={() => handleDelete(tenant.id)} title="Delete"><Trash2 size={14} /></button>
+                )}
               </div>
             </div>
             <h4 className="tenant-name">{tenant.name}</h4>

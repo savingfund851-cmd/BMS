@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Receipt, Plus, Eye, Filter, Building2,
   Zap, Droplets, CheckCircle2, Clock, AlertTriangle,
-  X, FileText, Info, ChevronDown, ChevronUp, Edit3
+  X, FileText, Info, ChevronDown, ChevronUp, Edit3, Trash2
 } from 'lucide-react'
 import { billStore, tenantStore, buildingStore, meterReadingStore, settingsStore, paymentStore } from '../data/store'
 import { formatCurrency, getCurrentMonthYear, calculateBillTotal } from '../data/helpers'
@@ -114,6 +114,12 @@ function Billing() {
       }
     }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     setBills(enriched)
+  }
+
+  const handleDelete = async (id) => {
+    if (confirm('Are you sure you want to delete this bill?')) {
+      await billStore.remove(id)
+    }
   }
 
   /* ── Filtering ─────────────────────────────────────────────────────────── */
@@ -384,6 +390,12 @@ function Billing() {
                       onClick={() => navigate(`/bill-preview/${bill.id}?edit=true`)}>
                       <Edit3 size={16}/>
                     </button>
+                    {currentUser?.role === 'superadmin' && (
+                      <button className="btn-icon danger" title="Delete Bill"
+                        onClick={() => handleDelete(bill.id)}>
+                        <Trash2 size={16}/>
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
