@@ -162,7 +162,11 @@ function createStore(table) {
       const id = item.id || crypto.randomUUID();
       const dbRow = toDb({ ...item, id, createdAt: new Date().toISOString() });
       const { data, error } = await supabase.from(table).insert([dbRow]).select().single();
-      if (error) { console.error('Add error:', error.message); return null; }
+      if (error) { 
+        console.error('Add error:', error.message); 
+        alert(`Supabase Error (${table}): ${error.message}`);
+        return null; 
+      }
       const converted = fromDb(data);
       cache[table] = [...(cache[table] || []), converted];
       localStorage.setItem('sb_'+table, JSON.stringify(cache[table]));
