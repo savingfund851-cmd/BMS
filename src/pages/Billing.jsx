@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Receipt, Plus, Eye, Filter, Building2,
   Zap, Droplets, CheckCircle2, Clock, AlertTriangle,
-  X, FileText, Info, ChevronDown, ChevronUp
+  X, FileText, Info, ChevronDown, ChevronUp, Edit3
 } from 'lucide-react'
 import { billStore, tenantStore, buildingStore, meterReadingStore, settingsStore, paymentStore } from '../data/store'
 import { formatCurrency, getCurrentMonthYear, calculateBillTotal } from '../data/helpers'
@@ -375,10 +375,16 @@ function Billing() {
                 <td className="table-amount">{formatCurrency(bill.totalAmount)}</td>
                 <td><span className={`status-badge status-${bill.status}`}>{bill.status}</span></td>
                 <td>
-                  <button className="btn-icon" title="View Bill"
-                    onClick={() => navigate(`/bill-preview/${bill.id}`)}>
-                    <Eye size={16}/>
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="btn-icon" title="View Bill"
+                      onClick={() => navigate(`/bill-preview/${bill.id}`)}>
+                      <Eye size={16}/>
+                    </button>
+                    <button className="btn-icon" title="Edit Bill"
+                      onClick={() => navigate(`/bill-preview/${bill.id}?edit=true`)}>
+                      <Edit3 size={16}/>
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

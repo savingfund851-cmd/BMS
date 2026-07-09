@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Printer, Edit3, Lock, X } from 'lucide-react'
 import { billStore, tenantStore, buildingStore, settingsStore, paymentStore, userStore } from '../data/store'
 import { formatCurrency, formatDate, generateBillNumber } from '../data/helpers'
@@ -7,6 +7,7 @@ import { formatCurrency, formatDate, generateBillNumber } from '../data/helpers'
 function BillPreview() {
   const { billId } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [bill, setBill] = useState(null)
   const [tenant, setTenant] = useState(null)
   const [building, setBuilding] = useState(null)
@@ -21,6 +22,8 @@ function BillPreview() {
   const [authError, setAuthError] = useState('')
   const [showEditModal, setShowEditModal] = useState(false)
   const [editForm, setEditForm] = useState({
+    electricityCurrentReading: '',
+    waterCurrentReading: '',
     rent: 0, electricity: 0, water: 0, gas: 0, serviceCharge: 0, otherCharges: 0
   })
 
@@ -47,6 +50,12 @@ function BillPreview() {
     return () => window.removeEventListener('storeUpdated', handler)
   }, [billId])
 
+  useEffect(() => {
+    if (searchParams.get('edit') === 'true' && bill && !showAuthModal && !showEditModal) {
+      handleEditClick()
+    }
+  }, [searchParams, bill])
+
   const handlePrint = () => { window.print() }
 
   const handleEditClick = () => {
@@ -62,6 +71,8 @@ function BillPreview() {
     if (verified) {
       setShowAuthModal(false)
       setEditForm({
+        electricityCurrentReading: bill.electricityCurrentReading ?? '',
+        waterCurrentReading: bill.waterCurrentReading ?? '',
         rent: bill.rent || 0,
         electricity: bill.electricity || 0,
         water: bill.water || 0,
@@ -75,25 +86,63 @@ function BillPreview() {
     }
   }
 
+  // Real-time calculations inside the Edit Modal
+  const getElecCalc = () => {
+    if (bill?.electricityPreviousReading == null) return null;
+    const current = parseFloat(editForm.electricityCurrentReading) || 0;
+    const prev = bill.electricityPreviousReading;
+    const units = Math.max(0, current - prev);
+    const unitCost = units * (tenant.electricityRate || 0);
+    const globalDemandRate = settings.electricityDemandRate ?? 90;
+    const demandCharge = (tenant.sectionLoad || 0) * globalDemandRate;
+    const subTotal = unitCost + demandCharge;
+    const vatRate = (settings.electricityVatRate ?? 5) / 100;
+    const vat = subTotal * vatRate;
+    return { units, unitCost, demandCharge, subTotal, vat, total: subTotal + vat };
+  }
+
+  const getWaterCalc = () => {
+    if (bill?.waterPreviousReading == null) return null;
+    const current = parseFloat(editForm.waterCurrentReading) || 0;
+    const prev = bill.waterPreviousReading;
+    const units = Math.max(0, current - prev);
+    const subTotal = units * (tenant.waterRate || 0);
+    const vatRate = (settings.waterVatRate ?? 15) / 100;
+    const vat = subTotal * vatRate;
+    return { units, subTotal, vat, total: subTotal + vat };
+  }
+
+  const elecCalc = bill?.electricityUnits != null ? getElecCalc() : null;
+  const waterCalc = bill?.waterUnits != null ? getWaterCalc() : null;
+
+  const displayElectricity = elecCalc ? Math.round(elecCalc.total) : parseFloat(editForm.electricity) || 0;
+  const displayWater = waterCalc ? Math.round(waterCalc.total) : parseFloat(editForm.water) || 0;
+
+  const editTotal = (parseFloat(editForm.rent) || 0) + displayElectricity + displayWater + (parseFloat(editForm.gas) || 0) + (parseFloat(editForm.serviceCharge) || 0) + (parseFloat(editForm.otherCharges) || 0);
+
   const handleEditSubmit = async (e) => {
     e.preventDefault()
-    const updatedRent = parseFloat(editForm.rent) || 0
-    const updatedElec = parseFloat(editForm.electricity) || 0
-    const updatedWater = parseFloat(editForm.water) || 0
-    const updatedGas = parseFloat(editForm.gas) || 0
-    const updatedSvc = parseFloat(editForm.serviceCharge) || 0
-    const updatedOther = parseFloat(editForm.otherCharges) || 0
-    
-    const newTotal = updatedRent + updatedElec + updatedWater + updatedGas + updatedSvc + updatedOther
     
     await billStore.update(bill.id, {
-      rent: updatedRent,
-      electricity: updatedElec,
-      water: updatedWater,
-      gas: updatedGas,
-      serviceCharge: updatedSvc,
-      otherCharges: updatedOther,
-      totalAmount: newTotal
+      rent: parseFloat(editForm.rent) || 0,
+      gas: parseFloat(editForm.gas) || 0,
+      serviceCharge: parseFloat(editForm.serviceCharge) || 0,
+      otherCharges: parseFloat(editForm.otherCharges) || 0,
+      
+      electricityCurrentReading: elecCalc ? (parseFloat(editForm.electricityCurrentReading) || 0) : bill.electricityCurrentReading,
+      electricityUnits: elecCalc ? elecCalc.units : bill.electricityUnits,
+      electricityUnitCost: elecCalc ? elecCalc.unitCost : bill.electricityUnitCost,
+      electricityDemandCharge: elecCalc ? elecCalc.demandCharge : bill.electricityDemandCharge,
+      electricityVat: elecCalc ? Math.round(elecCalc.vat) : bill.electricityVat,
+      electricity: displayElectricity,
+
+      waterCurrentReading: waterCalc ? (parseFloat(editForm.waterCurrentReading) || 0) : bill.waterCurrentReading,
+      waterUnits: waterCalc ? waterCalc.units : bill.waterUnits,
+      waterUnitCost: waterCalc ? waterCalc.subTotal : bill.waterUnitCost,
+      waterVat: waterCalc ? Math.round(waterCalc.vat) : bill.waterVat,
+      water: displayWater,
+
+      totalAmount: editTotal
     })
     
     setShowEditModal(false)
@@ -684,16 +733,37 @@ function BillPreview() {
                   <label className="form-label">Rent</label>
                   <input type="number" className="form-input" value={editForm.rent} onChange={e => setEditForm({...editForm, rent: e.target.value})} min="0" step="0.01" />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Electricity Total</label>
-                  <input type="number" className="form-input" value={editForm.electricity} onChange={e => setEditForm({...editForm, electricity: e.target.value})} min="0" step="0.01" />
-                  <small style={{ color: 'var(--text-muted)' }}>Includes Usage, Demand Charge & VAT</small>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Water Total</label>
-                  <input type="number" className="form-input" value={editForm.water} onChange={e => setEditForm({...editForm, water: e.target.value})} min="0" step="0.01" />
-                  <small style={{ color: 'var(--text-muted)' }}>Includes Usage & VAT</small>
-                </div>
+                {bill.electricityPreviousReading != null ? (
+                  <div className="form-group">
+                    <label className="form-label">Electricity Current Reading</label>
+                    <input type="number" className="form-input" value={editForm.electricityCurrentReading} onChange={e => setEditForm({...editForm, electricityCurrentReading: e.target.value})} min="0" step="0.01" />
+                    <small style={{ color: 'var(--text-muted)' }}>
+                      Prev: {bill.electricityPreviousReading} • Used: {elecCalc?.units || 0} kWh • Auto Total: ৳{displayElectricity.toLocaleString()}
+                    </small>
+                  </div>
+                ) : (
+                  <div className="form-group">
+                    <label className="form-label">Electricity Total</label>
+                    <input type="number" className="form-input" value={editForm.electricity} onChange={e => setEditForm({...editForm, electricity: e.target.value})} min="0" step="0.01" />
+                    <small style={{ color: 'var(--text-muted)' }}>Includes Usage, Demand Charge & VAT</small>
+                  </div>
+                )}
+
+                {bill.waterPreviousReading != null ? (
+                  <div className="form-group">
+                    <label className="form-label">Water Current Reading</label>
+                    <input type="number" className="form-input" value={editForm.waterCurrentReading} onChange={e => setEditForm({...editForm, waterCurrentReading: e.target.value})} min="0" step="0.01" />
+                    <small style={{ color: 'var(--text-muted)' }}>
+                      Prev: {bill.waterPreviousReading} • Used: {waterCalc?.units || 0} unit • Auto Total: ৳{displayWater.toLocaleString()}
+                    </small>
+                  </div>
+                ) : (
+                  <div className="form-group">
+                    <label className="form-label">Water Total</label>
+                    <input type="number" className="form-input" value={editForm.water} onChange={e => setEditForm({...editForm, water: e.target.value})} min="0" step="0.01" />
+                    <small style={{ color: 'var(--text-muted)' }}>Includes Usage & VAT</small>
+                  </div>
+                )}
                 <div className="form-group">
                   <label className="form-label">Gas Bill</label>
                   <input type="number" className="form-input" value={editForm.gas} onChange={e => setEditForm({...editForm, gas: e.target.value})} min="0" step="0.01" />
