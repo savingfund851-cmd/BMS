@@ -195,11 +195,9 @@ function Billing() {
     let newlyGeneratedBills = []
     
     const promises = targetTenants.map(async tenant => {
-      // Skip if bill already exists for this month/year
-      const existing = billStore.getAll().find(
-        b => b.tenantId === tenant.id && b.month === genBase.month && b.year === Number(genBase.year)
-      )
-      if (existing) {
+      // Check Supabase directly (bypasses local cache) — safe for multi-PC
+      const alreadyExists = await billStore.checkExists(tenant.id, genBase.month, Number(genBase.year))
+      if (alreadyExists) {
         skippedCount++
         return
       }
@@ -251,15 +249,16 @@ function Billing() {
       }
       bill.totalAmount = bill.rent + bill.electricity + bill.water + gas + svc + other
 
-      // Save bill and meter reading asynchronously
-      const localBill = { ...bill, id: crypto.randomUUID() }
+      // Save to Supabase — if it fails, skip (don't use fake local ID)
       const saved = await billStore.add(bill)
-      const finalBill = saved || localBill
-      newlyGeneratedBills.push({
-        ...finalBill,
-        tenantName: tenant.name,
-        flat: tenant.flat
-      })
+      if (saved) {
+        newlyGeneratedBills.push({
+          ...saved,
+          tenantName: tenant.name,
+          flat: tenant.flat
+        })
+        generatedCount++
+      }
 
       // Save meter reading record
       await meterReadingStore.add({
@@ -274,7 +273,6 @@ function Billing() {
         waterPreviousReading: prevWater,
         waterUnits: waterCalc.units
       })
-      generatedCount++
     })
 
     await Promise.all(promises)

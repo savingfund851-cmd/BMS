@@ -197,8 +197,24 @@ function createStore(table) {
 // ---------------------------------------------------------------------------
 export const buildingStore = createStore('buildings');
 export const tenantStore = createStore('tenants');
-export const billStore = createStore('bills');
 export const paymentStore = createStore('payments');
+
+// billStore with extra method for multi-PC safe duplicate check
+export const billStore = {
+  ...createStore('bills'),
+  // Queries Supabase directly to check if a bill exists — bypasses local cache
+  checkExists: async (tenantId, month, year) => {
+    const { data, error } = await supabase
+      .from('bills')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('month', month)
+      .eq('year', year)
+      .maybeSingle();
+    if (error) return false;
+    return !!data;
+  }
+};
 
 export const meterReadingStore = {
   ...createStore('meter_readings'),
