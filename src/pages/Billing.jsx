@@ -223,6 +223,7 @@ function Billing() {
       const rentEnabled = billItemsCfg.includes('rent')
 
       const bill = {
+        id: crypto.randomUUID(),
         tenantId: tenant.id,
         buildingId: genBase.buildingId,
         month: genBase.month,
@@ -250,6 +251,9 @@ function Billing() {
 
       attemptedTenants.push(tenant)
       await billStore.add(bill)
+      
+      // Auto open the bill preview
+      window.open(`/bill-preview/${bill.id}`, '_blank')
 
       // Save meter reading record
       await meterReadingStore.add({
@@ -281,34 +285,6 @@ function Billing() {
     // Wait for Supabase writes to propagate, then reload
     await new Promise(r => setTimeout(r, 600))
     loadBills()
-
-    // Get the bills from Supabase cache (freshly loaded)
-    const allBills = billStore.getAll()
-    const freshBills = allBills.filter(
-      b => b.month === genBase.month &&
-           b.year === Number(genBase.year) &&
-           attemptedTenants.some(t => t.id === b.tenantId)
-    )
-    const billsForModal = freshBills.map(b => ({
-      ...b,
-      tenantName: attemptedTenants.find(t => t.id === b.tenantId)?.name || 'Tenant',
-      flat: attemptedTenants.find(t => t.id === b.tenantId)?.flat || ''
-    }))
-
-    // Fallback: if cache doesn't have bills yet (Supabase delay),
-    // show modal with tenant names + amounts even without IDs
-    if (billsForModal.length === 0) {
-      const fallback = attemptedTenants.map(tenant => ({
-        id: null,
-        tenantName: tenant.name,
-        flat: tenant.flat,
-        totalAmount: 0
-      }))
-      setGeneratedBillsList(fallback)
-    } else {
-      setGeneratedBillsList(billsForModal)
-    }
-    setShowSuccessModal(true)
   }
 
   const resetModal = () => {
