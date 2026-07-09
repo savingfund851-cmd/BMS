@@ -190,12 +190,11 @@ function Billing() {
 
   /* ── Final bill generation ──────────────────────────────────────────────── */
   const handleGenerateBills = async () => {
-    let generatedCount = 0
     let skippedCount = 0
-    let newlyGeneratedBills = []
-    
+    const attemptedTenants = []  // tenants we tried to generate for
+
     const promises = targetTenants.map(async tenant => {
-      // Check Supabase directly (bypasses local cache) — safe for multi-PC
+      // Check Supabase directly — safe for multi-PC use
       const alreadyExists = await billStore.checkExists(tenant.id, genBase.month, Number(genBase.year))
       if (alreadyExists) {
         skippedCount++
@@ -249,16 +248,8 @@ function Billing() {
       }
       bill.totalAmount = bill.rent + bill.electricity + bill.water + gas + svc + other
 
-      // Save to Supabase — if it fails, skip (don't use fake local ID)
-      const saved = await billStore.add(bill)
-      if (saved) {
-        newlyGeneratedBills.push({
-          ...saved,
-          tenantName: tenant.name,
-          flat: tenant.flat
-        })
-        generatedCount++
-      }
+      attemptedTenants.push(tenant)
+      await billStore.add(bill)
 
       // Save meter reading record
       await meterReadingStore.add({
@@ -282,26 +273,42 @@ function Billing() {
     setMeterInputs({})
     setCalcPreview({})
 
-    // small delay to let state settle
-    await new Promise(r => setTimeout(r, 400))
+    if (attemptedTenants.length === 0 && skippedCount > 0) {
+      alert(`Bills already exist for all ${skippedCount} tenant(s) for ${genBase.month} ${genBase.year}. Please choose a different month/year.`)
+      return
+    }
+
+    // Wait for Supabase writes to propagate, then reload
+    await new Promise(r => setTimeout(r, 600))
     loadBills()
 
-    if (generatedCount === 0 && skippedCount > 0) {
-      alert(`Bills already exist for all ${skippedCount} tenant(s) for ${genBase.month} ${genBase.year}. Please choose a different month/year.`)
-    } else if (generatedCount > 0) {
-      // Get freshly saved bills from the store (by matching tenantId + month + year)
-      const freshBills = billStore.getAll().filter(
-        b => b.month === genBase.month && b.year === Number(genBase.year) &&
-        targetTenants.some(t => t.id === b.tenantId)
-      )
-      const billsWithNames = freshBills.map(b => ({
-        ...b,
-        tenantName: targetTenants.find(t => t.id === b.tenantId)?.name || 'Tenant',
-        flat: targetTenants.find(t => t.id === b.tenantId)?.flat || ''
+    // Get the bills from Supabase cache (freshly loaded)
+    const allBills = billStore.getAll()
+    const freshBills = allBills.filter(
+      b => b.month === genBase.month &&
+           b.year === Number(genBase.year) &&
+           attemptedTenants.some(t => t.id === b.tenantId)
+    )
+    const billsForModal = freshBills.map(b => ({
+      ...b,
+      tenantName: attemptedTenants.find(t => t.id === b.tenantId)?.name || 'Tenant',
+      flat: attemptedTenants.find(t => t.id === b.tenantId)?.flat || ''
+    }))
+
+    // Fallback: if cache doesn't have bills yet (Supabase delay),
+    // show modal with tenant names + amounts even without IDs
+    if (billsForModal.length === 0) {
+      const fallback = attemptedTenants.map(tenant => ({
+        id: null,
+        tenantName: tenant.name,
+        flat: tenant.flat,
+        totalAmount: 0
       }))
-      setGeneratedBillsList(billsWithNames.length > 0 ? billsWithNames : newlyGeneratedBills)
-      setShowSuccessModal(true)
+      setGeneratedBillsList(fallback)
+    } else {
+      setGeneratedBillsList(billsForModal)
     }
+    setShowSuccessModal(true)
   }
 
   const resetModal = () => {
@@ -811,20 +818,26 @@ function Billing() {
               <p style={{ marginBottom: '15px', color: '#94a3b8' }}>You can now view and print the generated invoices:</p>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {generatedBillsList.map(b => (
-                  <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', backgroundColor: 'var(--bg-lighter)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                {generatedBillsList.map((b, idx) => (
+                  <div key={b.id || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', backgroundColor: 'var(--bg-lighter)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
                     <div>
                       <div style={{ fontWeight: '500', color: 'var(--text-main)', marginBottom: '4px' }}>{b.tenantName}</div>
                       <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Flat: {b.flat} • Amount: ৳{b.totalAmount.toLocaleString()}</div>
                     </div>
-                    <button 
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => window.open(`/bill-preview/${b.id}`, '_blank')}
-                      style={{ padding: '6px 12px', fontSize: '0.85rem' }}
-                    >
-                      <FileText size={14} style={{ marginRight: '6px' }} />
-                      Print Invoice
-                    </button>
+                    {b.id ? (
+                      <button 
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => window.open(`/bill-preview/${b.id}`, '_blank')}
+                        style={{ padding: '6px 12px', fontSize: '0.85rem' }}
+                      >
+                        <FileText size={14} style={{ marginRight: '6px' }} />
+                        Print Invoice
+                      </button>
+                    ) : (
+                      <span style={{ fontSize: '0.85rem', color: '#f59e0b', padding: '6px 12px' }}>
+                        Processing ID...
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
