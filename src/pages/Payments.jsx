@@ -20,6 +20,9 @@ function Payments() {
   const [modalBuilding, setModalBuilding] = useState('all')
   const [modalTenant, setModalTenant] = useState('all')
 
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [lastPayment, setLastPayment] = useState(null)
+
   const [form, setForm] = useState({
     billId: '', paymentDate: new Date().toISOString().split('T')[0],
     breakdown: { cash: '', card: '', nagad: '', bkash: '' }, note: ''
@@ -171,7 +174,7 @@ function Payments() {
       receivedBy: 'Admin',
       note: form.note
     }
-    await paymentStore.add(payment)
+    const savedPayment = await paymentStore.add(payment)
     
     // Wait briefly for cache to update, then check totals
     await new Promise(r => setTimeout(r, 300))
@@ -190,6 +193,15 @@ function Payments() {
     setModalTenant('all')
     loadPayments()
     loadPendingBills()
+    
+    if (savedPayment) {
+      setLastPayment({
+        id: savedPayment.id,
+        amount: amt,
+        tenantName: pendingBillData ? pendingBillData.tenantName : 'Tenant'
+      })
+      setShowSuccessModal(true)
+    }
     
     // Also trigger global update for other components
     window.dispatchEvent(new Event('billsUpdated'))
@@ -399,6 +411,44 @@ function Payments() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* SUCCESS MODAL */}
+      {showSuccessModal && lastPayment && (
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 9999 }}>
+          <div className="modal-content animate-slide-up" style={{ maxWidth: '400px', textAlign: 'center' }}>
+            <div style={{ padding: '20px 0' }}>
+              <div style={{ width: '64px', height: '64px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                <CheckCircle2 size={32} />
+              </div>
+              <h3 style={{ marginBottom: '10px' }}>Payment Successful!</h3>
+              <p style={{ color: '#94a3b8', marginBottom: '5px' }}>
+                Received <strong>৳{lastPayment.amount.toLocaleString()}</strong> from {lastPayment.tenantName}.
+              </p>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
+              <button 
+                className="btn btn-primary"
+                onClick={() => {
+                  window.open(`/payment-receipt/${lastPayment.id}`, '_blank')
+                  setShowSuccessModal(false)
+                }}
+                style={{ width: '100%', justifyContent: 'center' }}
+              >
+                <Receipt size={18} />
+                <span>Print Receipt</span>
+              </button>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => setShowSuccessModal(false)}
+                style={{ width: '100%', justifyContent: 'center' }}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

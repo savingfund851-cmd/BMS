@@ -13,6 +13,7 @@ import Login from './pages/Login'
 import BillPreview from './pages/BillPreview'
 import TenantReport from './pages/TenantReport'
 import Profile from './pages/Profile'
+import PaymentReceipt from './pages/PaymentReceipt'
 import { initializeDefaultData, userStore } from './data/store'
 
 function App() {
@@ -81,6 +82,7 @@ function App() {
             <Route path="/tenant-report/:tenantId" element={<TenantReport />} />
             <Route path="/payments" element={<Payments />} />
             <Route path="/bill-preview/:billId" element={<BillPreview />} />
+            <Route path="/payment-receipt/:paymentId" element={<PaymentReceipt />} />
             <Route path="/profile" element={<Profile user={user} />} />
             {(user.role === 'superadmin' || user.canAccessSettings || 
                (user.permissions && (user.permissions.includes('manage_settings_general') || user.permissions.includes('manage_settings_billing') || user.permissions.includes('manage_settings_appearance') || user.permissions.includes('manage_settings')))) && (

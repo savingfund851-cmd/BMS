@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Printer } from 'lucide-react'
-import { billStore, tenantStore, buildingStore, settingsStore, paymentStore } from '../data/store'
+import { ArrowLeft, Printer, Edit3, Lock, X } from 'lucide-react'
+import { billStore, tenantStore, buildingStore, settingsStore, paymentStore, userStore } from '../data/store'
 import { formatCurrency, formatDate, generateBillNumber } from '../data/helpers'
 
 function BillPreview() {
@@ -13,6 +13,16 @@ function BillPreview() {
   const [settings, setSettings] = useState({})
   const [payments, setPayments] = useState([])
   const [totalPaid, setTotalPaid] = useState(0)
+  const [currentUser, setCurrentUser] = useState(null)
+
+  // Edit Modal State
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [authPassword, setAuthPassword] = useState('')
+  const [authError, setAuthError] = useState('')
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editForm, setEditForm] = useState({
+    rent: 0, electricity: 0, water: 0, gas: 0, serviceCharge: 0, otherCharges: 0
+  })
 
   useEffect(() => {
     const fetchData = () => {
@@ -28,6 +38,7 @@ function BillPreview() {
         setPayments(bPayments)
         setTotalPaid(bPayments.reduce((sum, p) => sum + p.amount, 0))
       }
+      setCurrentUser(JSON.parse(localStorage.getItem('tba_current_user') || '{}'))
     }
     fetchData()
 
@@ -37,6 +48,56 @@ function BillPreview() {
   }, [billId])
 
   const handlePrint = () => { window.print() }
+
+  const handleEditClick = () => {
+    setAuthPassword('')
+    setAuthError('')
+    setShowAuthModal(true)
+  }
+
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault()
+    setAuthError('')
+    const verified = await userStore.authenticate(currentUser.username, authPassword)
+    if (verified) {
+      setShowAuthModal(false)
+      setEditForm({
+        rent: bill.rent || 0,
+        electricity: bill.electricity || 0,
+        water: bill.water || 0,
+        gas: bill.gas || 0,
+        serviceCharge: bill.serviceCharge || 0,
+        otherCharges: bill.otherCharges || 0
+      })
+      setShowEditModal(true)
+    } else {
+      setAuthError('Incorrect password')
+    }
+  }
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault()
+    const updatedRent = parseFloat(editForm.rent) || 0
+    const updatedElec = parseFloat(editForm.electricity) || 0
+    const updatedWater = parseFloat(editForm.water) || 0
+    const updatedGas = parseFloat(editForm.gas) || 0
+    const updatedSvc = parseFloat(editForm.serviceCharge) || 0
+    const updatedOther = parseFloat(editForm.otherCharges) || 0
+    
+    const newTotal = updatedRent + updatedElec + updatedWater + updatedGas + updatedSvc + updatedOther
+    
+    await billStore.update(bill.id, {
+      rent: updatedRent,
+      electricity: updatedElec,
+      water: updatedWater,
+      gas: updatedGas,
+      serviceCharge: updatedSvc,
+      otherCharges: updatedOther,
+      totalAmount: newTotal
+    })
+    
+    setShowEditModal(false)
+  }
 
   if (!bill || !tenant || !building) {
     return (
@@ -75,7 +136,7 @@ function BillPreview() {
   const totalAfterLateFee = amountDue + lateFeeVal
 
   return (
-    <div className="animate-fade-in">
+    <>
       <div className="page-header no-print" style={{ padding: '20px', maxWidth: '210mm', margin: '0 auto', display: 'flex', justifyContent: 'space-between' }}>
         <div>
           <button className="btn btn-secondary btn-sm" onClick={() => navigate('/billing')}>
@@ -83,7 +144,13 @@ function BillPreview() {
             <span>Back to Billing</span>
           </button>
         </div>
-        <div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {(currentUser?.role === 'admin' || currentUser?.role === 'superadmin') && (
+            <button className="btn btn-secondary" onClick={handleEditClick}>
+              <Edit3 size={18} />
+              <span>Edit Bill</span>
+            </button>
+          )}
           <button className="btn btn-primary" onClick={handlePrint}>
             <Printer size={18} />
             <span>Print Invoice</span>
@@ -551,10 +618,104 @@ function BillPreview() {
               <div className="role">Manager, {orgName}</div>
             </div>
           </div>
-
         </div>
       </div>
-    </div>
+
+      {/* AUTH MODAL */}
+      {showAuthModal && (
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 9999 }}>
+          <div className="modal-content animate-slide-up" style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h3>Admin Verification</h3>
+              <button className="btn-close" onClick={() => setShowAuthModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p style={{ color: '#94a3b8', marginBottom: '15px', fontSize: '0.9rem' }}>
+                Please enter your password to edit this bill.
+              </p>
+              {authError && (
+                <div style={{ padding: '10px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '6px', marginBottom: '15px', fontSize: '0.9rem' }}>
+                  {authError}
+                </div>
+              )}
+              <form onSubmit={handleAuthSubmit}>
+                <div className="form-group">
+                  <label className="form-label">Password</label>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }}>
+                      <Lock size={18} />
+                    </span>
+                    <input
+                      type="password"
+                      className="form-input"
+                      style={{ paddingLeft: '40px' }}
+                      value={authPassword}
+                      onChange={(e) => setAuthPassword(e.target.value)}
+                      placeholder="Enter admin password"
+                      required
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowAuthModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary">Verify</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT MODAL */}
+      {showEditModal && (
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 9999 }}>
+          <div className="modal-content animate-slide-up" style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h3>Edit Bill Items</h3>
+              <button className="btn-close" onClick={() => setShowEditModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+              <form onSubmit={handleEditSubmit}>
+                <div className="form-group">
+                  <label className="form-label">Rent</label>
+                  <input type="number" className="form-input" value={editForm.rent} onChange={e => setEditForm({...editForm, rent: e.target.value})} min="0" step="0.01" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Electricity Total</label>
+                  <input type="number" className="form-input" value={editForm.electricity} onChange={e => setEditForm({...editForm, electricity: e.target.value})} min="0" step="0.01" />
+                  <small style={{ color: 'var(--text-muted)' }}>Includes Usage, Demand Charge & VAT</small>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Water Total</label>
+                  <input type="number" className="form-input" value={editForm.water} onChange={e => setEditForm({...editForm, water: e.target.value})} min="0" step="0.01" />
+                  <small style={{ color: 'var(--text-muted)' }}>Includes Usage & VAT</small>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Gas Bill</label>
+                  <input type="number" className="form-input" value={editForm.gas} onChange={e => setEditForm({...editForm, gas: e.target.value})} min="0" step="0.01" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Service Charge</label>
+                  <input type="number" className="form-input" value={editForm.serviceCharge} onChange={e => setEditForm({...editForm, serviceCharge: e.target.value})} min="0" step="0.01" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Other Charges</label>
+                  <input type="number" className="form-input" value={editForm.otherCharges} onChange={e => setEditForm({...editForm, otherCharges: e.target.value})} min="0" step="0.01" />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary">Save Changes</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 

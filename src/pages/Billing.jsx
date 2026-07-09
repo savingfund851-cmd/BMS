@@ -58,6 +58,10 @@ function Billing() {
   const [meterInputs, setMeterInputs] = useState({})  // { [tenantId]: { elec: '', water: '' } }
   const [calcPreview, setCalcPreview] = useState({})  // live calculation preview
 
+  // Success modal state
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [generatedBillsList, setGeneratedBillsList] = useState([])
+
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
     setCurrentUser(user)
@@ -185,11 +189,12 @@ function Billing() {
   }
 
   /* ── Final bill generation ──────────────────────────────────────────────── */
-  const handleGenerateBills = () => {
+  const handleGenerateBills = async () => {
     let generatedCount = 0
     let skippedCount = 0
-    let firstGeneratedBillId = null
-    targetTenants.forEach(tenant => {
+    let newlyGeneratedBills = []
+    
+    const promises = targetTenants.map(async tenant => {
       // Skip if bill already exists for this month/year
       const existing = billStore.getAll().find(
         b => b.tenantId === tenant.id && b.month === genBase.month && b.year === Number(genBase.year)
@@ -247,13 +252,17 @@ function Billing() {
       bill.totalAmount = bill.rent + bill.electricity + bill.water + gas + svc + other
 
       // Save bill and meter reading asynchronously
-      billStore.add(bill).then(saved => {
-        const newId = saved?.id || (saved + '')
-        if (!firstGeneratedBillId) firstGeneratedBillId = newId
-      })
+      const saved = await billStore.add(bill)
+      if (saved) {
+        newlyGeneratedBills.push({
+          ...saved,
+          tenantName: tenant.name,
+          flat: tenant.flat
+        })
+      }
 
       // Save meter reading record
-      meterReadingStore.add({
+      await meterReadingStore.add({
         tenantId: tenant.id,
         buildingId: genBase.buildingId,
         month: genBase.month,
@@ -268,15 +277,19 @@ function Billing() {
       generatedCount++
     })
 
+    await Promise.all(promises)
+
     setShowGenerateModal(false)
     setGenStep(1)
     setMeterInputs({})
     setCalcPreview({})
     loadBills()
+
     if (generatedCount === 0 && skippedCount > 0) {
       alert(`Bills already exist for all ${skippedCount} tenant(s) for ${genBase.month} ${genBase.year}. Please choose a different month/year.`)
-    } else if (generatedCount > 0 && firstGeneratedBillId) {
-      navigate(`/bill-preview/${firstGeneratedBillId}`)
+    } else if (generatedCount > 0) {
+      setGeneratedBillsList(newlyGeneratedBills)
+      setShowSuccessModal(true)
     }
   }
 
@@ -765,6 +778,51 @@ function Billing() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* SUCCESS MODAL */}
+      {showSuccessModal && (
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 9999 }}>
+          <div className="modal-content animate-slide-up" style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h3>Bills Generated Successfully</h3>
+              <button className="btn-close" onClick={() => setShowSuccessModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+              <div style={{ padding: '15px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <CheckCircle2 size={24} />
+                <span>Successfully generated {generatedBillsList.length} bill(s).</span>
+              </div>
+              <p style={{ marginBottom: '15px', color: '#94a3b8' }}>You can now view and print the generated invoices:</p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {generatedBillsList.map(b => (
+                  <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', backgroundColor: 'var(--bg-lighter)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div>
+                      <div style={{ fontWeight: '500', color: 'var(--text-main)', marginBottom: '4px' }}>{b.tenantName}</div>
+                      <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Flat: {b.flat} • Amount: ৳{b.totalAmount.toLocaleString()}</div>
+                    </div>
+                    <button 
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => window.open(`/bill-preview/${b.id}`, '_blank')}
+                      style={{ padding: '6px 12px', fontSize: '0.85rem' }}
+                    >
+                      <FileText size={14} style={{ marginRight: '6px' }} />
+                      Print Invoice
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="modal-footer" style={{ marginTop: '20px' }}>
+              <button className="btn btn-primary" onClick={() => setShowSuccessModal(false)}>
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}
