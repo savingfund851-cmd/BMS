@@ -77,7 +77,7 @@ function toDb(obj) {
   const map = {
     buildingId: 'building_id', tenantId: 'tenant_id', billId: 'bill_id',
     totalAmount: 'total_amount', dueDate: 'due_date', moveInDate: 'move_in_date',
-    monthlyRent: 'monthly_rent', advanceDeposit: 'advance_deposit',
+    totalFlats: 'total_flats', monthlyRent: 'monthly_rent', advanceDeposit: 'advance_deposit',
     electricityRate: 'electricity_rate', electricityStartUnit: 'electricity_start_unit',
     electricityStartDate: 'electricity_start_date', sectionLoad: 'section_load',
     waterRate: 'water_rate', waterStartUnit: 'water_start_unit', waterStartDate: 'water_start_date',
@@ -103,7 +103,7 @@ function fromDb(row) {
   const map = {
     building_id: 'buildingId', tenant_id: 'tenantId', bill_id: 'billId',
     total_amount: 'totalAmount', due_date: 'dueDate', move_in_date: 'moveInDate',
-    monthly_rent: 'monthlyRent', advance_deposit: 'advanceDeposit',
+    total_flats: 'totalFlats', monthly_rent: 'monthlyRent', advance_deposit: 'advanceDeposit',
     electricity_rate: 'electricityRate', electricity_start_unit: 'electricityStartUnit',
     electricity_start_date: 'electricityStartDate', section_load: 'sectionLoad',
     water_rate: 'waterRate', water_start_unit: 'waterStartUnit', water_start_date: 'waterStartDate',
