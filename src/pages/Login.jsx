@@ -115,20 +115,6 @@ function Login({ onLogin }) {
               </>
             )}
           </button>
-
-          <div className="login-hint">
-            <p>Demo Credentials:</p>
-            <div className="credentials-grid">
-              <div className="credential-item">
-                <span className="credential-role">Super Admin</span>
-                <code>superadmin / admin123</code>
-              </div>
-              <div className="credential-item">
-                <span className="credential-role">Admin</span>
-                <code>admin / admin123</code>
-              </div>
-            </div>
-          </div>
         </form>
       </div>
     </div>

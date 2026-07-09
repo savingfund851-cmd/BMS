@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { 
   LayoutDashboard, Building2, Users, Receipt, CreditCard, 
-  Settings, LogOut, ChevronLeft, ChevronRight, Zap
+  Settings, LogOut, ChevronLeft, ChevronRight, Zap, User
 } from 'lucide-react'
 import { settingsStore } from '../data/store'
 
@@ -33,6 +33,8 @@ function Sidebar({ user, isOpen, onToggle, onLogout }) {
   if (hasAnySettingsPerm || user.canAccessSettings) {
     navItems.push({ path: '/settings', icon: Settings, label: 'Settings' })
   }
+  
+  navItems.push({ path: '/profile', icon: User, label: 'Profile' })
 
   return (
     <aside className={`sidebar ${isOpen ? 'open' : 'collapsed'}`}>
