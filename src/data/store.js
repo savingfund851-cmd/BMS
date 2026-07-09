@@ -218,9 +218,20 @@ export const meterReadingStore = {
 
 export const userStore = {
   ...createStore('app_users'),
-  authenticate: (username, password) => {
-    const users = cache.app_users || [];
-    return users.find(u => u.username === username && u.password === password) || null;
+  authenticate: async (username, password) => {
+    // First try cache (instant)
+    const fromCache = (cache.app_users || []).find(u => u.username === username && u.password === password);
+    if (fromCache) return fromCache;
+
+    // Fallback: query Supabase directly (in case cache not loaded yet)
+    const { data, error } = await supabase
+      .from('app_users')
+      .select('*')
+      .eq('username', username)
+      .eq('password', password)
+      .single();
+    if (error || !data) return null;
+    return fromDb(data);
   }
 };
 

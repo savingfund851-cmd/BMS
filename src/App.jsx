@@ -27,21 +27,15 @@ function App() {
     }
     window.addEventListener('storeUpdated', handleUpdate)
 
-    const checkUser = async () => {
+    const checkUser = () => {
       const savedUser = localStorage.getItem('tba_current_user')
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser)
-        try {
-          const freshUser = await userStore.getById(parsedUser.id)
-          if (freshUser) {
-            setUser(freshUser)
-            localStorage.setItem('tba_current_user', JSON.stringify(freshUser))
-          } else {
-            setUser(parsedUser)
-          }
-        } catch (err) {
-          console.error("Error fetching user", err)
-          setUser(parsedUser)
+        // getById reads from cache (synchronous)
+        const freshUser = userStore.getById(parsedUser.id)
+        setUser(freshUser || parsedUser)
+        if (freshUser) {
+          localStorage.setItem('tba_current_user', JSON.stringify(freshUser))
         }
       }
     }

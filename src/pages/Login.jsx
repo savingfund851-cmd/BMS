@@ -17,20 +17,22 @@ function Login({ onLogin }) {
     return () => window.removeEventListener('storeUpdated', handler)
   }, [])
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    setTimeout(() => {
-      const user = userStore.authenticate(username, password)
+    try {
+      const user = await userStore.authenticate(username, password)
       if (user) {
         onLogin(user)
       } else {
         setError('Invalid username or password')
       }
-      setLoading(false)
-    }, 800)
+    } catch (err) {
+      setError('Connection error. Please try again.')
+    }
+    setLoading(false)
   }
 
   return (
