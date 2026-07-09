@@ -252,14 +252,14 @@ function Billing() {
       bill.totalAmount = bill.rent + bill.electricity + bill.water + gas + svc + other
 
       // Save bill and meter reading asynchronously
+      const localBill = { ...bill, id: crypto.randomUUID() }
       const saved = await billStore.add(bill)
-      if (saved) {
-        newlyGeneratedBills.push({
-          ...saved,
-          tenantName: tenant.name,
-          flat: tenant.flat
-        })
-      }
+      const finalBill = saved || localBill
+      newlyGeneratedBills.push({
+        ...finalBill,
+        tenantName: tenant.name,
+        flat: tenant.flat
+      })
 
       // Save meter reading record
       await meterReadingStore.add({
@@ -283,12 +283,25 @@ function Billing() {
     setGenStep(1)
     setMeterInputs({})
     setCalcPreview({})
+
+    // small delay to let state settle
+    await new Promise(r => setTimeout(r, 400))
     loadBills()
 
     if (generatedCount === 0 && skippedCount > 0) {
       alert(`Bills already exist for all ${skippedCount} tenant(s) for ${genBase.month} ${genBase.year}. Please choose a different month/year.`)
     } else if (generatedCount > 0) {
-      setGeneratedBillsList(newlyGeneratedBills)
+      // Get freshly saved bills from the store (by matching tenantId + month + year)
+      const freshBills = billStore.getAll().filter(
+        b => b.month === genBase.month && b.year === Number(genBase.year) &&
+        targetTenants.some(t => t.id === b.tenantId)
+      )
+      const billsWithNames = freshBills.map(b => ({
+        ...b,
+        tenantName: targetTenants.find(t => t.id === b.tenantId)?.name || 'Tenant',
+        flat: targetTenants.find(t => t.id === b.tenantId)?.flat || ''
+      }))
+      setGeneratedBillsList(billsWithNames.length > 0 ? billsWithNames : newlyGeneratedBills)
       setShowSuccessModal(true)
     }
   }

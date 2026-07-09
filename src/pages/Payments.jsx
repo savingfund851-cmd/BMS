@@ -177,7 +177,7 @@ function Payments() {
     const savedPayment = await paymentStore.add(payment)
     
     // Wait briefly for cache to update, then check totals
-    await new Promise(r => setTimeout(r, 300))
+    await new Promise(r => setTimeout(r, 400))
     const allPayments = paymentStore.getAll().filter(p => p.billId === bill.id)
     const totalPaid = allPayments.reduce((s, p) => s + p.amount, 0)
     
@@ -187,6 +187,11 @@ function Payments() {
       await billStore.update(form.billId, { status: 'partial' })
     }
 
+    // Find the latest payment in the store (most recently added)
+    const freshPayments = paymentStore.getAll().filter(p => p.billId === bill.id)
+    const latestPayment = freshPayments[freshPayments.length - 1]
+    const paymentId = savedPayment?.id || latestPayment?.id || null
+
     setShowModal(false)
     setForm({ billId: '', paymentDate: new Date().toISOString().split('T')[0], breakdown: { cash: '', card: '', nagad: '', bkash: '' }, note: '' })
     setModalBuilding('all')
@@ -194,14 +199,13 @@ function Payments() {
     loadPayments()
     loadPendingBills()
     
-    if (savedPayment) {
-      setLastPayment({
-        id: savedPayment.id,
-        amount: amt,
-        tenantName: pendingBillData ? pendingBillData.tenantName : 'Tenant'
-      })
-      setShowSuccessModal(true)
-    }
+    // Always show success modal
+    setLastPayment({
+      id: paymentId,
+      amount: amt,
+      tenantName: pendingBillData ? pendingBillData.tenantName : 'Tenant'
+    })
+    setShowSuccessModal(true)
     
     // Also trigger global update for other components
     window.dispatchEvent(new Event('billsUpdated'))
@@ -430,17 +434,19 @@ function Payments() {
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
-              <button 
-                className="btn btn-primary"
-                onClick={() => {
-                  window.open(`/payment-receipt/${lastPayment.id}`, '_blank')
-                  setShowSuccessModal(false)
-                }}
-                style={{ width: '100%', justifyContent: 'center' }}
-              >
-                <Receipt size={18} />
-                <span>Print Receipt</span>
-              </button>
+              {lastPayment.id && (
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => {
+                    window.open(`/payment-receipt/${lastPayment.id}`, '_blank')
+                    setShowSuccessModal(false)
+                  }}
+                  style={{ width: '100%', justifyContent: 'center' }}
+                >
+                  <Receipt size={18} />
+                  <span>Print Receipt</span>
+                </button>
+              )}
               <button 
                 className="btn btn-secondary" 
                 onClick={() => setShowSuccessModal(false)}
