@@ -127,6 +127,7 @@ function Settings() {
     { id: 'general', icon: Building2, label: 'General', perm: 'manage_settings_general' },
     { id: 'billing', icon: Receipt, label: 'Billing', perm: 'manage_settings_billing' },
     { id: 'users', icon: Users, label: 'User Management', perm: 'manage_settings_users' },
+    { id: 'permissions', icon: Shield, label: 'Security & Permissions', perm: 'manage_settings_permissions' },
     { id: 'appearance', icon: Palette, label: 'Appearance', perm: 'manage_settings_appearance' },
   ]
   const tabs = allTabs.filter(tab => hasPerm(tab.perm))
@@ -375,6 +376,59 @@ function Settings() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'permissions' && (
+            <div className="settings-section animate-fade-in">
+              <h3 className="section-title">Global Delete Permissions</h3>
+              <p style={{ color: 'var(--color-text-muted)', marginBottom: '20px', fontSize: '13px' }}>
+                Control which user roles are allowed to permanently delete records (Buildings, Tenants, Bills, Payments). Super Admin always has this permission.
+              </p>
+              
+              <div className="form-group">
+                <div className="toggle-item" style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '16px', marginBottom: '16px' }}>
+                  <div>
+                    <span className="toggle-label">Allow Admins to Delete</span>
+                    <p className="toggle-desc">Admins can delete any records.</p>
+                  </div>
+                  <label className="toggle-switch">
+                    <input 
+                      type="checkbox" 
+                      checked={(settings.allowedDeleteRoles || []).includes('admin')} 
+                      onChange={e => {
+                        const roles = settings.allowedDeleteRoles || []
+                        const newRoles = e.target.checked 
+                          ? [...roles, 'admin'] 
+                          : roles.filter(r => r !== 'admin')
+                        setSettings({...settings, allowedDeleteRoles: newRoles})
+                      }} 
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                </div>
+                
+                <div className="toggle-item">
+                  <div>
+                    <span className="toggle-label">Allow Managers to Delete</span>
+                    <p className="toggle-desc">Managers can delete records within their assigned building.</p>
+                  </div>
+                  <label className="toggle-switch">
+                    <input 
+                      type="checkbox" 
+                      checked={(settings.allowedDeleteRoles || []).includes('manager')} 
+                      onChange={e => {
+                        const roles = settings.allowedDeleteRoles || []
+                        const newRoles = e.target.checked 
+                          ? [...roles, 'manager'] 
+                          : roles.filter(r => r !== 'manager')
+                        setSettings({...settings, allowedDeleteRoles: newRoles})
+                      }} 
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                </div>
               </div>
             </div>
           )}

@@ -5,7 +5,7 @@ import {
   Zap, Droplets, CheckCircle2, Clock, AlertTriangle,
   X, FileText, Info, ChevronDown, ChevronUp, Edit3, Trash2
 } from 'lucide-react'
-import { billStore, tenantStore, buildingStore, meterReadingStore, settingsStore, paymentStore } from '../data/store'
+import { billStore, tenantStore, buildingStore, meterReadingStore, settingsStore, paymentStore, userStore } from '../data/store'
 import { formatCurrency, getCurrentMonthYear, calculateBillTotal } from '../data/helpers'
 
 /* ─── Electricity calculation helper ─────────────────────────────────────── */
@@ -62,6 +62,14 @@ function Billing() {
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [generatedBillsList, setGeneratedBillsList] = useState([])
 
+  const [settings, setSettings] = useState({})
+  
+  // Delete Auth State
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [authPassword, setAuthPassword] = useState('')
+  const [authError, setAuthError] = useState('')
+  const [deletingId, setDeletingId] = useState(null)
+
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
     setCurrentUser(user)
@@ -69,6 +77,8 @@ function Billing() {
       navigate('/')
       return
     }
+
+    setSettings(settingsStore.get() || {})
 
     let allBuildings = buildingStore.getAll()
     if (user.role === 'manager' && user.buildingId) {
@@ -81,7 +91,10 @@ function Billing() {
     loadBills(user)
     
     // Listen for payments to update bill statuses dynamically
-    const handleUpdate = () => loadBills(JSON.parse(localStorage.getItem('tba_current_user') || '{}'))
+    const handleUpdate = () => {
+      loadBills(JSON.parse(localStorage.getItem('tba_current_user') || '{}'))
+      setSettings(settingsStore.get() || {})
+    }
     window.addEventListener('billsUpdated', handleUpdate)
     window.addEventListener('storeUpdated', handleUpdate)
     return () => {
@@ -91,11 +104,17 @@ function Billing() {
   }, [])
 
   const loadBills = (user = currentUser) => {
+    let allTenants = tenantStore.getAll()
+    if (user && user.role === 'manager' && user.buildingId) {
+      allTenants = allTenants.filter(t => t.buildingId === user.buildingId)
+    }
+    setTenants(allTenants)
+
     let allBills = billStore.getAll()
     if (user && user.role === 'manager' && user.buildingId) {
       allBills = allBills.filter(b => b.buildingId === user.buildingId)
     }
-    const allTenants = tenantStore.getAll()
+    
     const allBuildings = buildingStore.getAll()
     const allPayments = paymentStore.getAll()
     
@@ -116,9 +135,24 @@ function Billing() {
     setBills(enriched)
   }
 
-  const handleDelete = async (id) => {
-    if (confirm('Are you sure you want to delete this bill?')) {
-      await billStore.remove(id)
+  const handleDelete = (id) => {
+    setDeletingId(id)
+    setAuthPassword('')
+    setAuthError('')
+    setShowAuthModal(true)
+  }
+
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault()
+    setAuthError('')
+    const verified = await userStore.authenticate(currentUser.username, authPassword)
+    if (verified) {
+      await billStore.remove(deletingId)
+      setShowAuthModal(false)
+      setDeletingId(null)
+      loadData()
+    } else {
+      setAuthError('Incorrect password')
     }
   }
 
@@ -390,7 +424,7 @@ function Billing() {
                       onClick={() => navigate(`/bill-preview/${bill.id}?edit=true`)}>
                       <Edit3 size={16}/>
                     </button>
-                    {currentUser?.role === 'superadmin' && (
+                    {(currentUser?.role === 'superadmin' || (settings.allowedDeleteRoles || []).includes(currentUser?.role)) && (
                       <button className="btn-icon danger" title="Delete Bill"
                         onClick={() => handleDelete(bill.id)}>
                         <Trash2 size={16}/>
@@ -840,6 +874,42 @@ function Billing() {
               <button className="btn btn-primary" onClick={() => setShowSuccessModal(false)}>
                 Done
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showAuthModal && (
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 9999 }}>
+          <div className="modal-content animate-slide-up" style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h3>Security Verification</h3>
+              <button className="btn-close" onClick={() => setShowAuthModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: '15px', color: 'var(--color-text-muted)' }}>
+                Deleting this record requires admin verification. Please enter your password to continue.
+              </p>
+              {authError && <div className="alert alert-danger" style={{ marginBottom: '15px' }}>{authError}</div>}
+              <form onSubmit={handleAuthSubmit}>
+                <div className="form-group">
+                  <label className="form-label">Admin Password</label>
+                  <input 
+                    type="password" 
+                    className="form-input" 
+                    value={authPassword} 
+                    onChange={e => setAuthPassword(e.target.value)} 
+                    placeholder="Enter password"
+                    required 
+                    autoFocus
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowAuthModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-danger">Confirm Delete</button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

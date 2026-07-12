@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Users, Plus, Edit3, Trash2, Phone, Mail, Home, X, Filter, FileText } from 'lucide-react'
-import { tenantStore, buildingStore, settingsStore } from '../data/store'
+import { tenantStore, buildingStore, settingsStore, userStore } from '../data/store'
 import { getInitials } from '../data/helpers'
 
 function Tenants() {
@@ -161,9 +161,28 @@ function Tenants() {
     setShowModal(true)
   }
 
-  const handleDelete = async (id) => {
-    if (confirm('Are you sure you want to delete this tenant?')) {
-      await tenantStore.remove(id)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [authPassword, setAuthPassword] = useState('')
+  const [authError, setAuthError] = useState('')
+  const [deletingId, setDeletingId] = useState(null)
+
+  const handleDelete = (id) => {
+    setDeletingId(id)
+    setAuthPassword('')
+    setAuthError('')
+    setShowAuthModal(true)
+  }
+
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault()
+    setAuthError('')
+    const verified = await userStore.authenticate(currentUser.username, authPassword)
+    if (verified) {
+      await tenantStore.remove(deletingId)
+      setShowAuthModal(false)
+      setDeletingId(null)
+    } else {
+      setAuthError('Incorrect password')
     }
   }
 
@@ -221,7 +240,7 @@ function Tenants() {
               </div>
               <div className="tenant-card-actions">
                 <button className="btn-icon" onClick={() => handleEdit(tenant)} title="Edit"><Edit3 size={14} /></button>
-                {currentUser?.role === 'superadmin' && (
+                {(currentUser?.role === 'superadmin' || (appSettings.allowedDeleteRoles || []).includes(currentUser?.role)) && (
                   <button className="btn-icon danger" onClick={() => handleDelete(tenant.id)} title="Delete"><Trash2 size={14} /></button>
                 )}
               </div>
@@ -406,6 +425,43 @@ function Tenants() {
                 <button type="submit" className="btn btn-primary">{editingTenant ? 'Update' : 'Add Tenant'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showAuthModal && (
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 9999 }}>
+          <div className="modal-content animate-slide-up" style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h3>Security Verification</h3>
+              <button className="btn-close" onClick={() => setShowAuthModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: '15px', color: 'var(--color-text-muted)' }}>
+                Deleting this record requires admin verification. Please enter your password to continue.
+              </p>
+              {authError && <div className="alert alert-danger" style={{ marginBottom: '15px' }}>{authError}</div>}
+              <form onSubmit={handleAuthSubmit}>
+                <div className="form-group">
+                  <label className="form-label">Admin Password</label>
+                  <input 
+                    type="password" 
+                    className="form-input" 
+                    value={authPassword} 
+                    onChange={e => setAuthPassword(e.target.value)} 
+                    placeholder="Enter password"
+                    required 
+                    autoFocus
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowAuthModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-danger">Confirm Delete</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

@@ -7,7 +7,7 @@ import { formatCurrency, formatDate, generateBillNumber } from '../data/helpers'
 function BillPreview() {
   const { billId } = useParams()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [bill, setBill] = useState(null)
   const [tenant, setTenant] = useState(null)
   const [building, setBuilding] = useState(null)
@@ -55,9 +55,14 @@ function BillPreview() {
 
   useEffect(() => {
     if (searchParams.get('edit') === 'true' && bill && !showAuthModal && !showEditModal) {
+      // Clear the edit param so it doesn't trigger again on re-renders
+      const params = new URLSearchParams(searchParams)
+      params.delete('edit')
+      setSearchParams(params, { replace: true })
+      
       handleEditClick()
     }
-  }, [searchParams, bill])
+  }, [searchParams, bill, showAuthModal, showEditModal])
 
   const handlePrint = () => { window.print() }
 

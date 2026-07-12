@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Building2, Plus, Edit3, Trash2, MapPin, Users, X } from 'lucide-react'
-import { buildingStore, tenantStore } from '../data/store'
+import { buildingStore, tenantStore, userStore, settingsStore } from '../data/store'
 
 function Buildings() {
   const navigate = useNavigate()
@@ -10,17 +10,28 @@ function Buildings() {
   const [editingBuilding, setEditingBuilding] = useState(null)
   const [form, setForm] = useState({ name: '', address: '', floors: '', totalFlats: '' })
   const [currentUser, setCurrentUser] = useState(null)
+  const [settings, setSettings] = useState({})
+
+  // Delete Auth State
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [authPassword, setAuthPassword] = useState('')
+  const [authError, setAuthError] = useState('')
+  const [deletingId, setDeletingId] = useState(null)
 
   useEffect(() => { 
     const user = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
     setCurrentUser(user)
+    setSettings(settingsStore.get() || {})
     if (user.role !== 'superadmin' && user.permissions && !user.permissions.includes('manage_buildings')) {
       navigate('/')
       return
     }
     loadBuildings(user) 
 
-    const handler = () => loadBuildings(JSON.parse(localStorage.getItem('tba_current_user') || '{}'  ))
+    const handler = () => {
+      loadBuildings(JSON.parse(localStorage.getItem('tba_current_user') || '{}'))
+      setSettings(settingsStore.get() || {})
+    }
     window.addEventListener('storeUpdated', handler)
     return () => window.removeEventListener('storeUpdated', handler)
   }, [navigate])
@@ -62,9 +73,23 @@ function Buildings() {
     setShowModal(true)
   }
 
-  const handleDelete = async (id) => {
-    if (confirm('Are you sure you want to delete this building? All associated tenants and bills will be lost.')) {
-      await buildingStore.remove(id)
+  const handleDelete = (id) => {
+    setDeletingId(id)
+    setAuthPassword('')
+    setAuthError('')
+    setShowAuthModal(true)
+  }
+
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault()
+    setAuthError('')
+    const verified = await userStore.authenticate(currentUser.username, authPassword)
+    if (verified) {
+      await buildingStore.remove(deletingId)
+      setShowAuthModal(false)
+      setDeletingId(null)
+    } else {
+      setAuthError('Incorrect password')
     }
   }
 
@@ -108,7 +133,7 @@ function Buildings() {
                   <button className="btn-icon" onClick={() => handleEdit(building)} title="Edit">
                     <Edit3 size={15} />
                   </button>
-                  {currentUser?.role === 'superadmin' && (
+                  {(currentUser?.role === 'superadmin' || (settings.allowedDeleteRoles || []).includes(currentUser?.role)) && (
                     <button className="btn-icon danger" onClick={() => handleDelete(building.id)} title="Delete">
                       <Trash2 size={15} />
                     </button>
@@ -152,58 +177,65 @@ function Buildings() {
               <div className="modal-body">
                 <div className="form-group">
                   <label className="form-label">Building Name</label>
-                  <input
-                    className="form-input"
-                    type="text"
-                    value={form.name}
-                    onChange={e => setForm({...form, name: e.target.value})}
-                    placeholder="e.g. Greenview Tower"
-                    required
-                  />
+                  <input className="form-input" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Address</label>
-                  <input
-                    className="form-input"
-                    type="text"
-                    value={form.address}
-                    onChange={e => setForm({...form, address: e.target.value})}
-                    placeholder="e.g. 12/A Dhanmondi, Dhaka"
-                    required
-                  />
+                  <input className="form-input" value={form.address} onChange={e => setForm({...form, address: e.target.value})} required />
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Floors</label>
-                    <input
-                      className="form-input"
-                      type="number"
-                      value={form.floors}
-                      onChange={e => setForm({...form, floors: e.target.value})}
-                      placeholder="6"
-                      min="1"
-                      required
-                    />
+                    <label className="form-label">Number of Floors</label>
+                    <input type="number" className="form-input" value={form.floors} onChange={e => setForm({...form, floors: e.target.value})} required min="1" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Total Flats</label>
-                    <input
-                      className="form-input"
-                      type="number"
-                      value={form.totalFlats}
-                      onChange={e => setForm({...form, totalFlats: e.target.value})}
-                      placeholder="24"
-                      min="1"
-                      required
-                    />
+                    <input type="number" className="form-input" value={form.totalFlats} onChange={e => setForm({...form, totalFlats: e.target.value})} required min="1" />
                   </div>
                 </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">{editingBuilding ? 'Update' : 'Add Building'}</button>
+                <button type="submit" className="btn btn-primary">{editingBuilding ? 'Save Changes' : 'Add Building'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showAuthModal && (
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 9999 }}>
+          <div className="modal-content animate-slide-up" style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h3>Security Verification</h3>
+              <button className="btn-close" onClick={() => setShowAuthModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: '15px', color: 'var(--color-text-muted)' }}>
+                Deleting this record requires admin verification. Please enter your password to continue.
+              </p>
+              {authError && <div className="alert alert-danger" style={{ marginBottom: '15px' }}>{authError}</div>}
+              <form onSubmit={handleAuthSubmit}>
+                <div className="form-group">
+                  <label className="form-label">Admin Password</label>
+                  <input 
+                    type="password" 
+                    className="form-input" 
+                    value={authPassword} 
+                    onChange={e => setAuthPassword(e.target.value)} 
+                    placeholder="Enter password"
+                    required 
+                    autoFocus
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowAuthModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-danger">Confirm Delete</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
