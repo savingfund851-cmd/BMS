@@ -2089,3 +2089,56 @@
   .meter-reading-row { flex-direction: column; align-items: stretch; }
   .meter-arrow { text-align: center; padding: 0; }
 }
+
+/* ═══════════════════════════════════════════
+   REPORTS PAGE
+   ═══════════════════════════════════════════ */
+.reports-page .report-tabs {
+  display: flex;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-5);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: var(--sp-2);
+  overflow-x: auto;
+}
+.report-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-5);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+.report-tab:hover {
+  color: var(--color-text-primary);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+.report-tab.active {
+  color: var(--color-emerald);
+  border-bottom-color: var(--color-emerald);
+}
+.report-section {
+  animation: fadeIn 0.3s ease;
+}
+
+@media print {
+  .no-print { display: none !important; }
+  .reports-page .glass-card {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .reports-page .data-table th, .reports-page .data-table td {
+    color: #000 !important;
+    border-color: #ddd !important;
+  }
+  body { background: #fff !important; color: #000 !important; }
+}

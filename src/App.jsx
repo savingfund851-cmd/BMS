@@ -11,6 +11,7 @@ import Payments from './pages/Payments'
 import Settings from './pages/Settings'
 import Login from './pages/Login'
 import BillPreview from './pages/BillPreview'
+import Reports from './pages/Reports'
 import TenantReport from './pages/TenantReport'
 import Profile from './pages/Profile'
 import PaymentReceipt from './pages/PaymentReceipt'
@@ -80,6 +81,7 @@ function App() {
             <Route path="/tenants" element={<Tenants />} />
             <Route path="/billing" element={<Billing />} />
             <Route path="/tenant-report/:tenantId" element={<TenantReport />} />
+            <Route path="/reports" element={<Reports />} />
             <Route path="/payments" element={<Payments />} />
             <Route path="/bill-preview/:billId" element={<BillPreview />} />
             <Route path="/payment-receipt/:paymentId" element={<PaymentReceipt />} />

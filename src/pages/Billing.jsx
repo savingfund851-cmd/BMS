@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import {
   Receipt, Plus, Eye, Filter, Building2,
   Zap, Droplets, CheckCircle2, Clock, AlertTriangle,
-  X, FileText, Info, ChevronDown, ChevronUp, Edit3, Trash2
+  X, FileText, Info, ChevronDown, ChevronUp, Edit3, Trash2, Mail
 } from 'lucide-react'
 import { billStore, tenantStore, buildingStore, meterReadingStore, settingsStore, paymentStore, userStore } from '../data/store'
 import { formatCurrency, getCurrentMonthYear, calculateBillTotal } from '../data/helpers'
+import { sendBillEmail } from '../data/emailService'
 
 /* ─── Electricity calculation helper ─────────────────────────────────────── */
 function calcElectricity(tenant, currentReading, prevReading) {
@@ -61,6 +62,7 @@ function Billing() {
   // Success modal state
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [generatedBillsList, setGeneratedBillsList] = useState([])
+  const [emailStatus, setEmailStatus] = useState({})
 
   const [settings, setSettings] = useState({})
   
@@ -150,9 +152,31 @@ function Billing() {
       await billStore.remove(deletingId)
       setShowAuthModal(false)
       setDeletingId(null)
-      loadData()
+      loadBills()
     } else {
       setAuthError('Incorrect password')
+    }
+  }
+
+  const handleEmailBill = async (bill) => {
+    const key = bill.id
+    setEmailStatus(prev => ({ ...prev, [key]: 'sending' }))
+    const t = tenants.find(x => x.id === bill.tenantId)
+    const bld = buildings.find(b => b.id === bill.buildingId)
+    const result = await sendBillEmail(t, bill, bld)
+    
+    if (result.success) {
+      setEmailStatus(prev => ({ ...prev, [key]: 'sent' }))
+      setTimeout(() => {
+        setEmailStatus(prev => {
+          const newState = { ...prev }
+          delete newState[key]
+          return newState
+        })
+      }, 3000)
+    } else {
+      setEmailStatus(prev => ({ ...prev, [key]: 'error' }))
+      alert(`Failed to send email: ${result.error}`)
     }
   }
 
@@ -853,14 +877,27 @@ function Billing() {
                       <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Flat: {b.flat} • Amount: ৳{b.totalAmount.toLocaleString()}</div>
                     </div>
                     {b.id ? (
-                      <button 
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => window.open(`/bill-preview/${b.id}`, '_blank')}
-                        style={{ padding: '6px 12px', fontSize: '0.85rem' }}
-                      >
-                        <FileText size={14} style={{ marginRight: '6px' }} />
-                        Print Invoice
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button 
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => window.open(`/bill-preview/${b.id}`, '_blank')}
+                          style={{ padding: '6px 12px', fontSize: '0.85rem' }}
+                        >
+                          <FileText size={14} style={{ marginRight: '6px' }} />
+                          Print Invoice
+                        </button>
+                        <button 
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => handleEmailBill(b)}
+                          disabled={emailStatus[b.id] === 'sending'}
+                          style={{ padding: '6px 12px', fontSize: '0.85rem' }}
+                        >
+                          {emailStatus[b.id] === 'sending' ? <Clock size={14} style={{ marginRight: '6px' }} /> : 
+                           emailStatus[b.id] === 'sent' ? <CheckCircle2 size={14} style={{ marginRight: '6px' }} color="var(--color-success)" /> : 
+                           <Mail size={14} style={{ marginRight: '6px' }} />}
+                          Email
+                        </button>
+                      </div>
                     ) : (
                       <span style={{ fontSize: '0.85rem', color: '#f59e0b', padding: '6px 12px' }}>
                         Processing ID...

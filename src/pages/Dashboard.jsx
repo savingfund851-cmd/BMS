@@ -5,7 +5,7 @@ import {
   ArrowUpRight, Clock, CheckCircle2, AlertTriangle, DollarSign
 } from 'lucide-react'
 import { buildingStore, tenantStore, billStore, paymentStore } from '../data/store'
-import { formatCurrency } from '../data/helpers'
+import { formatCurrency, getCurrentMonthYear } from '../data/helpers'
 
 function Dashboard() {
   const navigate = useNavigate()
@@ -40,28 +40,49 @@ function Dashboard() {
     return () => window.removeEventListener('storeUpdated', handler)
   }, [navigate])
 
+  const { month: currentMonth, year: currentYear } = getCurrentMonthYear()
   const loadDashboardData = (user) => {
+
     let buildings = buildingStore.getAll()
     let tenants = tenantStore.getAll()
-    let bills = billStore.getAll()
-    let payments = paymentStore.getAll()
+    let allBills = billStore.getAll()
+    let allPayments = paymentStore.getAll()
 
     if (user && user.role === 'manager' && user.buildingId) {
       buildings = buildings.filter(b => b.id === user.buildingId)
       tenants = tenants.filter(t => t.buildingId === user.buildingId)
-      bills = bills.filter(b => b.buildingId === user.buildingId)
-      payments = payments.filter(p => {
-        const bill = bills.find(b => b.id === p.billId)
+      allBills = allBills.filter(b => b.buildingId === user.buildingId)
+      allPayments = allPayments.filter(p => {
+        const bill = allBills.find(b => b.id === p.billId)
         return bill && bill.buildingId === user.buildingId
       })
     }
 
+    // Filter to current month ONLY
+    const bills = allBills.filter(b => b.month === currentMonth && Number(b.year) === currentYear)
+    
+    // For payments, since they are tied to bills or have their own date, 
+    // we want payments that were MADE in the current month, or payments for the current month's bills.
+    // The safest is to filter payments by their date for the dashboard.
+    const payments = allPayments.filter(p => {
+      const pDate = new Date(p.paymentDate)
+      return pDate.getMonth() === new Date().getMonth() && pDate.getFullYear() === currentYear
+    })
+
     const totalCollected = payments.reduce((sum, p) => sum + p.amount, 0)
     const totalBilled = bills.reduce((sum, b) => sum + b.totalAmount, 0)
-    const pendingBills = bills.filter(b => b.status === 'pending')
+    const pendingBills = bills.filter(b => b.status === 'pending' || b.status === 'partial')
     const overdueBills = bills.filter(b => b.status === 'overdue')
-    const totalPending = pendingBills.reduce((sum, b) => sum + b.totalAmount, 0)
-    const totalOverdue = overdueBills.reduce((sum, b) => sum + b.totalAmount, 0)
+    
+    // For pending/overdue, we look at the specific bill's due minus paid
+    const getBillDue = (b) => {
+      const bPayments = allPayments.filter(p => p.billId === b.id)
+      const paid = bPayments.reduce((sum, p) => sum + p.amount, 0)
+      return Math.max(0, b.totalAmount - paid)
+    }
+
+    const totalPending = pendingBills.reduce((sum, b) => sum + getBillDue(b), 0)
+    const totalOverdue = overdueBills.reduce((sum, b) => sum + getBillDue(b), 0)
 
     setStats({
       totalBuildings: buildings.length,
@@ -123,7 +144,7 @@ function Dashboard() {
       <div className="page-header">
         <div>
           <h2 className="page-title">Dashboard</h2>
-          <p className="page-subtitle">Overview of your property management</p>
+          <p className="page-subtitle">Overview for {currentMonth} {currentYear}</p>
         </div>
       </div>
 

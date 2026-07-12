@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { 
-  LayoutDashboard, Building2, Users, Receipt, CreditCard, 
+  LayoutDashboard, Building2, Users, Receipt, CreditCard, BarChart3,
   Settings, LogOut, ChevronLeft, ChevronRight, Zap, User
 } from 'lucide-react'
 import { settingsStore } from '../data/store'
@@ -23,7 +23,8 @@ function Sidebar({ user, isOpen, onToggle, onLogout }) {
     { path: '/buildings', icon: Building2, label: 'Buildings', perm: 'manage_buildings' },
     { path: '/tenants', icon: Users, label: 'Tenants', perm: 'manage_tenants' },
     { path: '/billing', icon: Receipt, label: 'Billing', perm: 'manage_billing' },
-    { path: '/payments', icon: CreditCard, label: 'Payments', perm: 'manage_payments' }
+    { path: '/payments', icon: CreditCard, label: 'Payments', perm: 'manage_payments' },
+    { path: '/reports', icon: BarChart3, label: 'Reports', perm: 'view_reports' }
   ]
 
   const navItems = allNavItems.filter(item => hasPerm(item.perm))

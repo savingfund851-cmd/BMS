@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { 
   Settings as SettingsIcon, Save, Building2, Receipt, Bell, 
-  Palette, Shield, Users, Plus, Trash2, X, Check
+  Palette, Shield, Users, Plus, Trash2, X, Check, Mail
 } from 'lucide-react'
 import { settingsStore, userStore, buildingStore } from '../data/store'
 
@@ -128,6 +128,7 @@ function Settings() {
     { id: 'billing', icon: Receipt, label: 'Billing', perm: 'manage_settings_billing' },
     { id: 'users', icon: Users, label: 'User Management', perm: 'manage_settings_users' },
     { id: 'permissions', icon: Shield, label: 'Security & Permissions', perm: 'manage_settings_permissions' },
+    { id: 'email', icon: Mail, label: 'Email Configuration', perm: 'manage_settings_general' },
     { id: 'appearance', icon: Palette, label: 'Appearance', perm: 'manage_settings_appearance' },
   ]
   const tabs = allTabs.filter(tab => hasPerm(tab.perm))
@@ -322,6 +323,52 @@ function Settings() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'email' && (
+            <div className="settings-section animate-fade-in">
+              <h3 className="section-title">Email Configuration</h3>
+              <p className="section-desc">Configure EmailJS to send automated emails, or leave blank to use your default email client (mailto:).</p>
+              
+              <div className="form-group" style={{ marginBottom: '24px' }}>
+                <label className="form-label">EmailJS Service ID</label>
+                <input 
+                  className="form-input" 
+                  value={settings.emailConfig?.serviceId || ''} 
+                  placeholder="e.g. service_xxxxxxx"
+                  onChange={e => setSettings({...settings, emailConfig: {...(settings.emailConfig||{}), serviceId: e.target.value}})} 
+                />
+              </div>
+              <div className="form-group" style={{ marginBottom: '24px' }}>
+                <label className="form-label">EmailJS Template ID</label>
+                <input 
+                  className="form-input" 
+                  value={settings.emailConfig?.templateId || ''} 
+                  placeholder="e.g. template_xxxxxxx"
+                  onChange={e => setSettings({...settings, emailConfig: {...(settings.emailConfig||{}), templateId: e.target.value}})} 
+                />
+              </div>
+              <div className="form-group" style={{ marginBottom: '24px' }}>
+                <label className="form-label">EmailJS Public Key</label>
+                <input 
+                  className="form-input" 
+                  value={settings.emailConfig?.publicKey || ''} 
+                  placeholder="e.g. your_public_key"
+                  onChange={e => setSettings({...settings, emailConfig: {...(settings.emailConfig||{}), publicKey: e.target.value}})} 
+                />
+              </div>
+
+              <div style={{ background: 'rgba(59,130,246,0.1)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(59,130,246,0.2)' }}>
+                <h4 style={{ margin: '0 0 8px', color: 'var(--color-blue)', fontSize: '14px' }}>How to set up automated emails (Free):</h4>
+                <ol style={{ margin: 0, paddingLeft: '20px', color: 'var(--color-text-secondary)', fontSize: '13px', lineHeight: '1.6' }}>
+                  <li>Go to <a href="https://www.emailjs.com/" target="_blank" rel="noreferrer" style={{ color: 'var(--color-blue)' }}>emailjs.com</a> and sign up for a free account.</li>
+                  <li>Add an Email Service (e.g., Gmail) and copy the <strong>Service ID</strong>.</li>
+                  <li>Create an Email Template and copy the <strong>Template ID</strong>. (Use variables like <code>&#123;&#123;to_name&#125;&#125;</code>, <code>&#123;&#123;bill_total&#125;&#125;</code>, <code>&#123;&#123;message_html&#125;&#125;</code>).</li>
+                  <li>Go to Account &gt; API Keys and copy the <strong>Public Key</strong>.</li>
+                  <li>Paste them above and save. Emails will now be sent automatically!</li>
+                </ol>
               </div>
             </div>
           )}
