@@ -197,7 +197,8 @@ function BillPreview() {
   const lateFeeVal = (bill.totalAmount * (settings.lateFeePercentage || 5)) / 100
   const grandTotal = bill.totalAmount
   const amountDue = Math.max(0, grandTotal - totalPaid)
-  const totalAfterLateFee = amountDue + lateFeeVal
+  const lateFeeDiscount = bill.lateFeeDiscount || 0
+  const totalAfterLateFee = amountDue + Math.max(0, lateFeeVal - lateFeeDiscount)
 
   return (
     <>
@@ -650,17 +651,22 @@ function BillPreview() {
                 {totalPaid > 0 && <tr className="payment"><td>Payments Received</td><td>-{formatCurrency(totalPaid)}</td></tr>}
                 
                 {bill.status !== 'paid' && (
-                  <tr className="overdue">
-                    <td>Late Payment Charge (if after due date)</td>
-                    <td>+{formatCurrency(lateFeeVal)}</td>
-                  </tr>
-                )}
-                
-                {bill.status !== 'paid' && (
-                  <tr style={{ fontWeight: 700 }}>
-                    <td>Total (If paid after due date)</td>
-                    <td>{formatCurrency(totalAfterLateFee)}</td>
-                  </tr>
+                  <>
+                    <tr className="overdue">
+                      <td>Late Payment Charge (if after due date)</td>
+                      <td>+{formatCurrency(lateFeeVal)}</td>
+                    </tr>
+                    {lateFeeDiscount > 0 && (
+                      <tr className="overdue" style={{ color: 'var(--green)' }}>
+                        <td>Late Fee Discount</td>
+                        <td>-{formatCurrency(lateFeeDiscount)}</td>
+                      </tr>
+                    )}
+                    <tr style={{ fontWeight: 700 }}>
+                      <td>Total (If paid after due date)</td>
+                      <td>{formatCurrency(totalAfterLateFee)}</td>
+                    </tr>
+                  </>
                 )}
               </tbody>
             </table>

@@ -105,6 +105,8 @@ function Payments() {
     const allTenants = tenantStore.getAll()
     const allBuildings = buildingStore.getAll()
     const allPayments = paymentStore.getAll()
+    const currentSettings = JSON.parse(localStorage.getItem('sb_app_settings') || '{}')
+    const lateFeePct = currentSettings.lateFeePercentage || 5
     
     const pending = allBills
       .filter(b => b.status === 'pending' || b.status === 'overdue' || b.status === 'partial')
@@ -113,11 +115,19 @@ function Payments() {
         const building = allBuildings.find(bl => bl.id === b.buildingId)
         const billPayments = allPayments.filter(p => p.billId === b.id)
         const totalPaid = billPayments.reduce((sum, p) => sum + p.amount, 0)
-        const dueAmount = b.totalAmount - totalPaid
+        
+        const isOverdue = b.status === 'overdue'
+        const lateFeeVal = isOverdue ? (b.totalAmount * lateFeePct) / 100 : 0
+        const lateFeeDiscount = b.lateFeeDiscount || 0
+        
+        const dueAmount = Math.max(0, b.totalAmount + lateFeeVal - lateFeeDiscount - totalPaid)
 
         return {
           ...b,
           dueAmount,
+          lateFeeVal,
+          lateFeeDiscount,
+          totalPaid,
           tenantName: tenant?.name || 'Unknown',
           tenantFlat: tenant?.flat || '',
           buildingName: building?.name || 'Unknown'
@@ -147,67 +157,74 @@ function Payments() {
     const bill = billStore.getById(form.billId)
     if (!bill) return
 
-    const amt = getTotalAmount()
-    if (amt <= 0) return
-
     const pendingBillData = pendingBills.find(b => b.id === form.billId)
-    const maxDue = pendingBillData ? pendingBillData.dueAmount : bill.totalAmount
+    if (!pendingBillData) return
 
-    if (amt > maxDue) {
-      alert(`Amount cannot exceed the due amount (৳${maxDue})`)
+    const amt = getTotalAmount()
+    const discountInput = parseFloat(form.lateFeeDiscount) || 0
+    
+    if (amt <= 0 && discountInput <= 0) return
+
+    const newTotalDiscount = pendingBillData.lateFeeDiscount + discountInput
+    if (newTotalDiscount > pendingBillData.lateFeeVal) {
+      alert(`Total discount cannot exceed the late fee amount (৳${pendingBillData.lateFeeVal})`)
       return
     }
 
-    const activeMethods = Object.entries(form.breakdown)
-      .filter(([_, val]) => parseFloat(val) > 0)
-      .map(([key]) => key)
-    
-    const displayMethod = activeMethods.length > 1 ? 'Multiple' : (activeMethods[0] || 'Unknown')
-
-    const payment = {
-      id: crypto.randomUUID(),
-      billId: form.billId,
-      tenantId: bill.tenantId,
-      amount: amt,
-      paymentDate: form.paymentDate,
-      method: displayMethod,
-      breakdown: form.breakdown,
-      receivedBy: 'Admin',
-      note: form.note
+    const effectiveMaxDue = pendingBillData.dueAmount - discountInput
+    if (amt > effectiveMaxDue) {
+      alert(`Amount cannot exceed the due amount (৳${effectiveMaxDue})`)
+      return
     }
-    await paymentStore.add(payment)
+
+    if (amt > 0) {
+      const activeMethods = Object.entries(form.breakdown)
+        .filter(([_, val]) => parseFloat(val) > 0)
+        .map(([key]) => key)
+      
+      const displayMethod = activeMethods.length > 1 ? 'Multiple' : (activeMethods[0] || 'Unknown')
+
+      const payment = {
+        id: crypto.randomUUID(),
+        billId: form.billId,
+        tenantId: bill.tenantId,
+        amount: amt,
+        paymentDate: form.paymentDate,
+        method: displayMethod,
+        breakdown: form.breakdown,
+        receivedBy: 'Admin',
+        note: form.note
+      }
+      await paymentStore.add(payment)
+      setLastPayment({ ...payment, tenantName: pendingBillData.tenantName })
+    }
     
     // Wait briefly for cache to update, then check totals
     await new Promise(r => setTimeout(r, 400))
     const allPayments = paymentStore.getAll().filter(p => p.billId === bill.id)
     const totalPaid = allPayments.reduce((s, p) => s + p.amount, 0)
     
-    if (totalPaid >= bill.totalAmount) {
-      await billStore.update(form.billId, { status: 'paid' })
-    } else {
-      await billStore.update(form.billId, { status: 'partial' })
-    }
+    const newStatus = (totalPaid >= (bill.totalAmount + pendingBillData.lateFeeVal - newTotalDiscount)) ? 'paid' : 'partial'
+    
+    await billStore.update(form.billId, { status: newStatus, lateFeeDiscount: newTotalDiscount })
 
     setShowModal(false)
-    setForm({ billId: '', paymentDate: new Date().toISOString().split('T')[0], breakdown: { cash: '', card: '', nagad: '', bkash: '' }, note: '' })
+    if (amt > 0) setShowSuccessModal(true)
+    setForm({ billId: '', paymentDate: new Date().toISOString().split('T')[0], breakdown: { cash: '', card: '', nagad: '', bkash: '' }, note: '', lateFeeDiscount: '' })
     setModalBuilding('all')
     setModalTenant('all')
     loadPayments()
     loadPendingBills()
     
-    // Also trigger global update for other components
     window.dispatchEvent(new Event('billsUpdated'))
-
-    // Auto open the print receipt page
-    window.open(`/payment-receipt/${payment.id}`, '_blank')
   }
 
   const selectBill = (billId) => {
     const bill = pendingBills.find(b => b.id === billId)
     if (bill) {
-      setForm({ ...form, billId, amount: bill.dueAmount })
+      setForm({ ...form, billId, amount: bill.dueAmount, lateFeeDiscount: '' })
     } else {
-      setForm({ ...form, billId, amount: '' })
+      setForm({ ...form, billId, amount: '', lateFeeDiscount: '' })
     }
   }
 
@@ -366,6 +383,31 @@ function Payments() {
                     ))}
                   </select>
                 </div>
+                {(() => {
+                  const selectedBill = pendingBills.find(b => b.id === form.billId);
+                  if (selectedBill && selectedBill.lateFeeVal > 0) {
+                    return (
+                      <div className="form-group" style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '12px', borderRadius: '8px' }}>
+                        <label className="form-label" style={{ color: 'var(--color-amber)', marginBottom: '8px', fontSize: '12.5px' }}>
+                          ⚠️ Overdue Bill: Late fee of {formatCurrency(selectedBill.lateFeeVal)} applies.
+                        </label>
+                        <div>
+                          <label className="form-label" style={{ fontSize: '11px' }}>Give Late Fee Discount (৳) - Max {selectedBill.lateFeeVal}</label>
+                          <input 
+                            className="form-input" 
+                            type="number" 
+                            min="0"
+                            max={selectedBill.lateFeeVal}
+                            placeholder="Discount amount" 
+                            value={form.lateFeeDiscount || ''} 
+                            onChange={e => setForm({...form, lateFeeDiscount: e.target.value})} 
+                          />
+                        </div>
+                      </div>
+                    )
+                  }
+                  return null;
+                })()}
                 <div className="form-group">
                   <label className="form-label" style={{ marginBottom: '12px' }}>Payment Breakdown</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'var(--bg-tertiary)', padding: '16px', borderRadius: '8px' }}>
