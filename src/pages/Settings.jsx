@@ -239,6 +239,15 @@ function Settings() {
                   <input className="form-input" value={settings.currencyName || 'BDT'} onChange={e => setSettings({...settings, currencyName: e.target.value})} />
                 </div>
               </div>
+              <div className="form-group">
+                <label className="form-label">Login Ticker Text <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 400 }}>(Login page scroll text)</span></label>
+                <input 
+                  className="form-input" 
+                  value={settings.loginTickerText || ''} 
+                  placeholder="e.g. ⚡ Live meter sync active"
+                  onChange={e => setSettings({...settings, loginTickerText: e.target.value})} 
+                />
+              </div>
             </div>
           )}
 
