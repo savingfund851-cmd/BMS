@@ -180,7 +180,6 @@ function Login({ onLogin }) {
             <div key={i} style={{ display: 'flex', gap: '48px', paddingRight: '48px' }}>
               <span>🏢 <b>{stats.bCount}</b> buildings connected</span>
               <span>⚡ {settings.loginTickerText || 'Live meter sync active'}</span>
-              <span>💳 <b>{formatCurrency(stats.bCollected)}</b> collected</span>
               <span>📄 <b>{stats.bGen}</b> bills generated</span>
               <span>✅ <b>Secure</b> encrypted portal</span>
             </div>
