@@ -12,7 +12,7 @@ function Settings() {
   const [buildings, setBuildings] = useState([])
   const [showUserModal, setShowUserModal] = useState(false)
   
-  const defaultPermissions = ['view_dashboard', 'manage_buildings', 'manage_tenants', 'manage_billing', 'manage_payments', 'manage_settings_general', 'manage_settings_billing', 'manage_settings_users', 'manage_settings_appearance']
+  const defaultPermissions = ['view_dashboard', 'manage_buildings', 'manage_tenants', 'manage_billing', 'manage_payments', 'view_reports', 'manage_settings_general', 'manage_settings_billing', 'manage_settings_users', 'manage_settings_appearance']
   const [userForm, setUserForm] = useState({ 
     username: '', password: '', name: '', role: 'admin', email: '', buildingId: '', 
     permissions: [...defaultPermissions]
@@ -584,6 +584,7 @@ function Settings() {
                         { id: 'manage_tenants', label: 'Manage Tenants', icon: '👥' },
                         { id: 'manage_billing', label: 'Manage Billing', icon: '🧾' },
                         { id: 'manage_payments', label: 'Manage Payments', icon: '💳' },
+                        { id: 'view_reports', label: 'View Reports', icon: '📈' },
                         { id: 'manage_settings_general', label: 'Settings: General', icon: '⚙️' },
                         { id: 'manage_settings_billing', label: 'Settings: Billing', icon: '💰' },
                         { id: 'manage_settings_users', label: 'Settings: Users', icon: '🔑' },
