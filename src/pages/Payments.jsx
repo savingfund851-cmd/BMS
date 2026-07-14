@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
-  CreditCard, Plus, CheckCircle2, X, Building2, Receipt, DollarSign, Calendar 
+  CreditCard, Plus, CheckCircle2, X, Building2, Receipt, DollarSign, Calendar, Eye, Printer
 } from 'lucide-react'
 import { paymentStore, billStore, tenantStore, buildingStore } from '../data/store'
 import { formatCurrency, formatDate, getDynamicBillStatus } from '../data/helpers'
@@ -304,6 +304,7 @@ function Payments() {
               <th>Bill Amount</th>
               <th>Paid</th>
               <th>Method</th>
+              <th>Receipt</th>
             </tr>
           </thead>
           <tbody>
@@ -329,9 +330,27 @@ function Payments() {
                   <td>{formatCurrency(payment.billAmount)}</td>
                   <td className="table-amount success">{formatCurrency(payment.amount)}</td>
                   <td>
-                    <span className={`method-badge method-${payment.method}`}>
+                    <span className={`method-badge method-${payment.method?.toLowerCase()}`}>
                       {payment.method}
                     </span>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        className="btn-icon"
+                        title="View Receipt"
+                        onClick={() => navigate(`/payment-receipt/${payment.id}`)}
+                      >
+                        <Eye size={15} />
+                      </button>
+                      <button
+                        className="btn-icon"
+                        title="Print Receipt"
+                        onClick={() => window.open(`/payment-receipt/${payment.id}`, '_blank')}
+                      >
+                        <Printer size={15} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

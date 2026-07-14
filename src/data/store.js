@@ -125,15 +125,26 @@ function fromDb(row) {
 
 function settingsFromDb(row) {
   if (!row) return {};
+  // Also merge any extra fields stored only in localStorage (like allowedDeleteRoles)
+  let localExtra = {};
+  try { const d = localStorage.getItem('sb_app_settings'); if (d) localExtra = JSON.parse(d); } catch(e) {}
   return {
+    ...localExtra,
     companyName: row.company_name,
     companyTagline: row.company_tagline,
+    companyAddress: row.company_address ?? localExtra.companyAddress,
+    companyPhone: row.company_phone ?? localExtra.companyPhone,
+    companyEmail: row.company_email ?? localExtra.companyEmail,
+    currency: row.currency ?? localExtra.currency ?? '৳',
+    loginTickerText: row.login_ticker_text ?? localExtra.loginTickerText,
     logoUrl: row.logo_url,
     electricityDemandRate: row.electricity_demand_rate,
     electricityVatRate: row.electricity_vat_rate,
     waterVatRate: row.water_vat_rate,
     lateFeePercentage: row.late_fee_percentage,
-    billItems: row.bill_items || ['rent','electricity','water','gas','serviceCharge','otherCharges']
+    billItems: row.bill_items || ['rent','electricity','water','gas','serviceCharge','otherCharges'],
+    allowedDeleteRoles: row.allowed_delete_roles ?? localExtra.allowedDeleteRoles ?? [],
+    billDueDay: row.bill_due_day ?? localExtra.billDueDay ?? 10,
   };
 }
 
@@ -141,12 +152,19 @@ function settingsToDb(obj) {
   return {
     company_name: obj.companyName,
     company_tagline: obj.companyTagline,
+    company_address: obj.companyAddress,
+    company_phone: obj.companyPhone,
+    company_email: obj.companyEmail,
+    currency: obj.currency,
+    login_ticker_text: obj.loginTickerText,
     logo_url: obj.logoUrl,
     electricity_demand_rate: obj.electricityDemandRate,
     electricity_vat_rate: obj.electricityVatRate,
     water_vat_rate: obj.waterVatRate,
     late_fee_percentage: obj.lateFeePercentage,
-    bill_items: obj.billItems
+    bill_items: obj.billItems,
+    allowed_delete_roles: obj.allowedDeleteRoles ?? [],
+    bill_due_day: obj.billDueDay ?? 10,
   };
 }
 
