@@ -125,33 +125,55 @@ function fromDb(row) {
 
 function settingsFromDb(row) {
   if (!row) return {};
-  // Also merge any extra fields stored only in localStorage (like allowedDeleteRoles)
+  
+  let tagline = row.company_tagline || '';
+  let extras = {};
+  if (tagline.includes('|||JSON:')) {
+    const parts = tagline.split('|||JSON:');
+    tagline = parts[0];
+    try { extras = JSON.parse(parts[1]); } catch(e) {}
+  }
+
+  // Fallback to local storage for any missing extras just in case
   let localExtra = {};
   try { const d = localStorage.getItem('sb_app_settings'); if (d) localExtra = JSON.parse(d); } catch(e) {}
+  const getExtra = (key, defaultVal) => extras[key] ?? localExtra[key] ?? defaultVal;
+
   return {
-    ...localExtra,
     companyName: row.company_name,
-    companyTagline: row.company_tagline,
-    companyAddress: row.company_address ?? localExtra.companyAddress,
-    companyPhone: row.company_phone ?? localExtra.companyPhone,
-    companyEmail: row.company_email ?? localExtra.companyEmail,
-    currency: row.currency ?? localExtra.currency ?? '৳',
-    loginTickerText: row.login_ticker_text ?? localExtra.loginTickerText,
+    companyTagline: tagline,
+    companyAddress: getExtra('companyAddress', ''),
+    companyPhone: getExtra('companyPhone', ''),
+    companyEmail: getExtra('companyEmail', ''),
+    currency: getExtra('currency', '৳'),
+    loginTickerText: getExtra('loginTickerText', ''),
     logoUrl: row.logo_url,
     electricityDemandRate: row.electricity_demand_rate,
     electricityVatRate: row.electricity_vat_rate,
     waterVatRate: row.water_vat_rate,
     lateFeePercentage: row.late_fee_percentage,
     billItems: row.bill_items || ['rent','electricity','water','gas','serviceCharge','otherCharges'],
-    allowedDeleteRoles: row.allowed_delete_roles ?? localExtra.allowedDeleteRoles ?? [],
-    billDueDay: row.bill_due_day ?? localExtra.billDueDay ?? 10,
+    allowedDeleteRoles: getExtra('allowedDeleteRoles', []),
+    billDueDay: getExtra('billDueDay', 10),
   };
 }
 
 function settingsToDb(obj) {
+  const extras = {
+    allowedDeleteRoles: obj.allowedDeleteRoles ?? [],
+    billDueDay: obj.billDueDay ?? 10,
+    companyAddress: obj.companyAddress,
+    companyPhone: obj.companyPhone,
+    companyEmail: obj.companyEmail,
+    currency: obj.currency,
+    loginTickerText: obj.loginTickerText
+  };
+  
+  const combinedTagline = (obj.companyTagline || '') + '|||JSON:' + JSON.stringify(extras);
+
   return {
     company_name: obj.companyName,
-    company_tagline: obj.companyTagline,
+    company_tagline: combinedTagline,
     logo_url: obj.logoUrl,
     electricity_demand_rate: obj.electricityDemandRate,
     electricity_vat_rate: obj.electricityVatRate,
