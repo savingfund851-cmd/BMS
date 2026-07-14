@@ -315,8 +315,6 @@ function Billing() {
         electricityCurrentReading: includeElec ? elecCurrent : null,
         electricityPreviousReading: includeElec ? prevElec : null,
         waterUnits: includeWater ? waterCalc.units : 0,
-        waterCharge: includeWater ? waterCalc.waterCharge : 0,
-        sewerageCharge: includeWater ? waterCalc.sewerageCharge : 0,
         waterUnitCost: includeWater ? waterCalc.subTotal : 0,
         waterVat: includeWater ? Math.round(waterCalc.vat) : 0,
         water: includeWater ? Math.round(waterCalc.total) : 0,
