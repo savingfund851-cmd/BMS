@@ -152,19 +152,12 @@ function settingsToDb(obj) {
   return {
     company_name: obj.companyName,
     company_tagline: obj.companyTagline,
-    company_address: obj.companyAddress,
-    company_phone: obj.companyPhone,
-    company_email: obj.companyEmail,
-    currency: obj.currency,
-    login_ticker_text: obj.loginTickerText,
     logo_url: obj.logoUrl,
     electricity_demand_rate: obj.electricityDemandRate,
     electricity_vat_rate: obj.electricityVatRate,
     water_vat_rate: obj.waterVatRate,
     late_fee_percentage: obj.lateFeePercentage,
-    bill_items: obj.billItems,
-    allowed_delete_roles: obj.allowedDeleteRoles ?? [],
-    bill_due_day: obj.billDueDay ?? 10,
+    bill_items: obj.billItems
   };
 }
 
@@ -278,7 +271,7 @@ export const settingsStore = {
   save: async (settings) => {
     const dbData = { id: 'default', ...settingsToDb(settings), updated_at: new Date().toISOString() };
     const { error } = await supabase.from('app_settings').upsert([dbData]);
-    if (error) { console.error('Settings save error:', error.message); return null; }
+    if (error) { console.error('Settings save error:', error.message); }
     cache.app_settings = settings;
     localStorage.setItem('sb_app_settings', JSON.stringify(settings));
     window.dispatchEvent(new Event('storeUpdated'));
