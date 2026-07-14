@@ -4,7 +4,7 @@ import {
   CreditCard, Plus, CheckCircle2, X, Building2, Receipt, DollarSign, Calendar 
 } from 'lucide-react'
 import { paymentStore, billStore, tenantStore, buildingStore } from '../data/store'
-import { formatCurrency, formatDate } from '../data/helpers'
+import { formatCurrency, formatDate, getDynamicBillStatus } from '../data/helpers'
 
 function Payments() {
   const navigate = useNavigate()
@@ -25,7 +25,7 @@ function Payments() {
 
   const [form, setForm] = useState({
     billId: '', paymentDate: new Date().toISOString().split('T')[0],
-    breakdown: { cash: '', card: '', nagad: '', bkash: '' }, note: ''
+    breakdown: { cash: '', card: '', nagad: '', bkash: '' }, note: '', lateFeeDiscount: ''
   })
 
   const getTotalAmount = () => {
@@ -109,14 +109,15 @@ function Payments() {
     const lateFeePct = currentSettings.lateFeePercentage || 5
     
     const pending = allBills
-      .filter(b => b.status === 'pending' || b.status === 'overdue' || b.status === 'partial')
+      .map(b => ({ ...b, dynamicStatus: getDynamicBillStatus(b) }))
+      .filter(b => b.dynamicStatus === 'pending' || b.dynamicStatus === 'overdue' || b.dynamicStatus === 'partial')
       .map(b => {
         const tenant = allTenants.find(t => t.id === b.tenantId)
         const building = allBuildings.find(bl => bl.id === b.buildingId)
         const billPayments = allPayments.filter(p => p.billId === b.id)
         const totalPaid = billPayments.reduce((sum, p) => sum + p.amount, 0)
         
-        const isOverdue = b.status === 'overdue'
+        const isOverdue = b.dynamicStatus === 'overdue'
         const lateFeeVal = isOverdue ? (b.totalAmount * lateFeePct) / 100 : 0
         const lateFeeDiscount = b.lateFeeDiscount || 0
         

@@ -115,3 +115,22 @@ export function calculateBillTotal(bill) {
     (bill.otherCharges || 0)
   );
 }
+
+/**
+ * Determine dynamic status based on due date.
+ * If pending/partial and past due date, it becomes overdue.
+ * @param {object} bill
+ * @returns {string} e.g. "paid", "pending", "overdue", "partial"
+ */
+export function getDynamicBillStatus(bill) {
+  let status = bill.status || 'pending';
+  if (status === 'pending' || status === 'partial') {
+    if (bill.dueDate) {
+      const today = new Date().toISOString().split('T')[0];
+      if (bill.dueDate < today) {
+        status = 'overdue';
+      }
+    }
+  }
+  return status;
+}

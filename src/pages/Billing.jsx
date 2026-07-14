@@ -6,7 +6,7 @@ import {
   X, FileText, Info, ChevronDown, ChevronUp, Edit3, Trash2, Mail
 } from 'lucide-react'
 import { billStore, tenantStore, buildingStore, meterReadingStore, settingsStore, paymentStore, userStore } from '../data/store'
-import { formatCurrency, getCurrentMonthYear, calculateBillTotal } from '../data/helpers'
+import { formatCurrency, getCurrentMonthYear, calculateBillTotal, getDynamicBillStatus } from '../data/helpers'
 import { sendBillEmail } from '../data/emailService'
 
 /* ─── Electricity calculation helper ─────────────────────────────────────── */
@@ -119,16 +119,27 @@ function Billing() {
     
     const allBuildings = buildingStore.getAll()
     const allPayments = paymentStore.getAll()
+    const currentSettings = JSON.parse(localStorage.getItem('sb_app_settings') || '{}')
+    const lateFeePct = currentSettings.lateFeePercentage || 5
     
     const enriched = allBills.map(b => {
+      const dynamicStatus = getDynamicBillStatus(b)
       const billPayments = allPayments.filter(p => p.billId === b.id)
       const totalPaid = billPayments.reduce((sum, p) => sum + p.amount, 0)
-      const dueAmount = b.totalAmount - totalPaid
+      
+      const isOverdue = dynamicStatus === 'overdue'
+      const lateFeeVal = isOverdue ? (b.totalAmount * lateFeePct) / 100 : 0
+      const lateFeeDiscount = b.lateFeeDiscount || 0
+      
+      const dueAmount = Math.max(0, b.totalAmount + lateFeeVal - lateFeeDiscount - totalPaid)
       
       return {
         ...b,
+        status: dynamicStatus, // Override status for UI display
         dueAmount,
         totalPaid,
+        lateFeeVal,
+        lateFeeDiscount,
         tenantName: allTenants.find(t => t.id === b.tenantId)?.name || 'Unknown',
         tenantFlat: allTenants.find(t => t.id === b.tenantId)?.flat || '',
         buildingName: allBuildings.find(bl => bl.id === b.buildingId)?.name || 'Unknown'
