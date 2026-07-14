@@ -25,7 +25,7 @@ function Payments() {
 
   const [form, setForm] = useState({
     billId: '', paymentDate: new Date().toISOString().split('T')[0],
-    breakdown: { cash: '', card: '', nagad: '', bkash: '' }, note: '', lateFeeDiscount: ''
+    breakdown: { cash: '', check: '', nagad: '', bkash: '' }, note: '', lateFeeDiscount: ''
   })
 
   const getTotalAmount = () => {
@@ -211,7 +211,7 @@ function Payments() {
 
     setShowModal(false)
     if (amt > 0) setShowSuccessModal(true)
-    setForm({ billId: '', paymentDate: new Date().toISOString().split('T')[0], breakdown: { cash: '', card: '', nagad: '', bkash: '' }, note: '', lateFeeDiscount: '' })
+    setForm({ billId: '', paymentDate: new Date().toISOString().split('T')[0], breakdown: { cash: '', check: '', nagad: '', bkash: '' }, note: '', lateFeeDiscount: '' })
     setModalBuilding('all')
     setModalTenant('all')
     loadPayments()
@@ -406,54 +406,64 @@ function Payments() {
                 {(() => {
                   const selectedBill = pendingBills.find(b => b.id === form.billId);
                   if (selectedBill && selectedBill.lateFeeVal > 0) {
+                    const discountInput = parseFloat(form.lateFeeDiscount) || 0
+                    const afterDiscount = Math.max(0, selectedBill.dueAmount - discountInput)
                     return (
-                      <div className="form-group" style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '12px', borderRadius: '8px' }}>
-                        <label className="form-label" style={{ color: 'var(--color-amber)', marginBottom: '8px', fontSize: '12.5px' }}>
-                          ⚠️ Overdue Bill: Late fee of {formatCurrency(selectedBill.lateFeeVal)} applies.
-                        </label>
-                        <div>
-                          <label className="form-label" style={{ fontSize: '11px' }}>Give Late Fee Discount (৳) - Max {selectedBill.lateFeeVal}</label>
+                      <div style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.25)', padding: '14px', borderRadius: '10px', marginBottom: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-amber)', fontSize: '12.5px', fontWeight: 600, marginBottom: '10px' }}>
+                          ⚠️ Overdue Bill — Late fee: {formatCurrency(selectedBill.lateFeeVal)}
+                        </div>
+                        <div className="form-group" style={{ marginBottom: '8px' }}>
+                          <label className="form-label" style={{ fontSize: '11px' }}>Late Fee Discount (৳) — Max {formatCurrency(selectedBill.lateFeeVal)}</label>
                           <input 
                             className="form-input" 
                             type="number" 
                             min="0"
                             max={selectedBill.lateFeeVal}
-                            placeholder="Discount amount" 
+                            step="0.01"
+                            placeholder="0.00" 
                             value={form.lateFeeDiscount || ''} 
                             onChange={e => setForm({...form, lateFeeDiscount: e.target.value})} 
                           />
                         </div>
+                        {discountInput > 0 && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', padding: '8px 10px', background: 'rgba(16,185,129,0.08)', borderRadius: '6px', border: '1px solid rgba(16,185,129,0.2)' }}>
+                            <span style={{ color: '#94a3b8' }}>After Discount Payable:</span>
+                            <span style={{ color: '#10b981', fontWeight: 700 }}>{formatCurrency(afterDiscount)}</span>
+                          </div>
+                        )}
                       </div>
                     )
                   }
                   return null;
                 })()}
                 <div className="form-group">
-                  <label className="form-label" style={{ marginBottom: '12px' }}>Payment Breakdown</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'var(--bg-tertiary)', padding: '16px', borderRadius: '8px' }}>
-                    {['cash', 'card', 'nagad', 'bkash'].map(method => (
+                  <label className="form-label" style={{ marginBottom: '10px' }}>Payment Breakdown</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: 'var(--bg-tertiary)', padding: '14px', borderRadius: '10px' }}>
+                    {[['cash','💵 Cash'],['check','🏦 Check / Bank'],['nagad','📱 Nagad'],['bkash','📲 bKash']].map(([method, label]) => (
                       <div key={method} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <label className="form-label" style={{ fontSize: '11px' }}>{method.charAt(0).toUpperCase() + method.slice(1)}</label>
+                        <label className="form-label" style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{label}</label>
                         <input 
                           className="form-input" 
-                          type="number" 
-                          placeholder="0" 
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
                           value={form.breakdown[method]} 
                           onChange={e => setForm(prev => ({...prev, breakdown: {...prev.breakdown, [method]: e.target.value}}))} 
                         />
                       </div>
                     ))}
                   </div>
+                  {getTotalAmount() > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', padding: '8px 12px', background: 'rgba(16,185,129,0.08)', borderRadius: '6px', border: '1px solid rgba(16,185,129,0.2)' }}>
+                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>Total Payment:</span>
+                      <span style={{ fontSize: '14px', fontWeight: 700, color: '#10b981' }}>{formatCurrency(getTotalAmount())}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Total Amount (৳)</label>
-                    <input className="form-input" type="number" value={getTotalAmount() || ''} readOnly style={{ background: 'var(--bg-tertiary)' }} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Payment Date</label>
-                    <input className="form-input" type="date" value={form.paymentDate} onChange={e => setForm({...form, paymentDate: e.target.value})} required />
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">Payment Date</label>
+                  <input className="form-input" type="date" value={form.paymentDate} onChange={e => setForm({...form, paymentDate: e.target.value})} required />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Note (Optional)</label>

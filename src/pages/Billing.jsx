@@ -26,10 +26,12 @@ function calcElectricity(tenant, currentReading, prevReading) {
 function calcWater(tenant, currentReading, prevReading) {
   const cfg = settingsStore.get() || {}
   const units = Math.max(0, currentReading - prevReading)
-  const subTotal = units * (tenant.waterRate || 0)
+  const waterCharge = units * (tenant.waterRate || 0)
+  const sewerageCharge = waterCharge   // sewerage = same as water
+  const subTotal = waterCharge + sewerageCharge
   const vatRate = (cfg.waterVatRate ?? 15) / 100
   const vat = subTotal * vatRate
-  return { units, subTotal, vat, vatRate: cfg.waterVatRate ?? 15, total: subTotal + vat }
+  return { units, waterCharge, sewerageCharge, subTotal, vat, vatRate: cfg.waterVatRate ?? 15, total: subTotal + vat }
 }
 
 const MONTHS = ['January','February','March','April','May','June',
@@ -313,6 +315,8 @@ function Billing() {
         electricityCurrentReading: includeElec ? elecCurrent : null,
         electricityPreviousReading: includeElec ? prevElec : null,
         waterUnits: includeWater ? waterCalc.units : 0,
+        waterCharge: includeWater ? waterCalc.waterCharge : 0,
+        sewerageCharge: includeWater ? waterCalc.sewerageCharge : 0,
         waterUnitCost: includeWater ? waterCalc.subTotal : 0,
         waterVat: includeWater ? Math.round(waterCalc.vat) : 0,
         water: includeWater ? Math.round(waterCalc.total) : 0,

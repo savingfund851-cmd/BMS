@@ -184,12 +184,19 @@ function BillPreview() {
   const showServiceCharge = billItems.includes('serviceCharge') && bill.serviceCharge > 0
   const showOtherCharges = billItems.includes('otherCharges') && bill.otherCharges > 0
 
+  // Bill title logic
+  const getBillTitle = () => {
+    if (showElectricity && !showWater && !showRent) return 'ELECTRICITY BILL'
+    if (showWater && !showElectricity && !showRent) return 'WATER BILL'
+    return 'COMBINED BILL'
+  }
+
   const elecVatRate = settings.electricityVatRate ?? 5
   const waterVatRate = settings.waterVatRate ?? 15
 
-  const orgName = settings.companyName || building.name
-  const orgAddr = settings.companyAddress || building.address
-  const crestInitials = orgName.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
+  // Header: always BMS + building name/address
+  const orgName = building.name
+  const orgAddr = building.address
 
   const totalVat = (bill.electricityVat || 0) + (bill.waterVat || 0)
   const subTotal = bill.totalAmount - totalVat
@@ -517,12 +524,11 @@ function BillPreview() {
           
           {/* Letterhead */}
           <div className="letterhead">
-            <div className="crest">
-              {settings.logoUrl ? <img src={settings.logoUrl} alt="Logo" /> : crestInitials}
-            </div>
-            <div>
-              <div className="org-name">{orgName}</div>
-              <div className="org-addr">{orgAddr}</div>
+            <div style={{ flex: 1 }}>
+              <div className="org-name" style={{ fontSize: '32px', letterSpacing: '3px', fontWeight: 900 }}>BMS</div>
+              <div style={{ fontFamily: 'Lora, serif', fontSize: '13px', color: 'var(--ink-soft)', letterSpacing: '2px', textTransform: 'uppercase', marginTop: '2px' }}>Building Management System</div>
+              <div style={{ marginTop: '6px', fontSize: '13px', color: 'var(--navy)', fontWeight: 700 }}>{orgName}</div>
+              <div style={{ fontSize: '11px', color: 'var(--ink-soft)', marginTop: '2px' }}>{orgAddr}</div>
             </div>
             <div className="doc-tag">
               <div className="label">Invoice No.</div>
@@ -531,7 +537,7 @@ function BillPreview() {
           </div>
 
           <div className="bill-title">
-            <h1>{showElectricity && !showWater && !showRent ? 'SUB METER ELECTRICITY BILL' : 'COMBINED UTILITY BILL'}</h1>
+            <h1>{getBillTitle()}</h1>
             <div className="rule"></div>
           </div>
 
@@ -557,14 +563,12 @@ function BillPreview() {
               <div className="v">{tenant.name} — Floor {tenant.floor}, Flat {tenant.flat}</div>
             </div>
             <div>
-              <div className="k">Meter No. / Load</div>
-              <div className="v">EM-{tenant.flat} {tenant.sectionLoad ? `(${tenant.sectionLoad} KW)` : ''}</div>
+              <div className="k">Electricity Meter No.</div>
+              <div className="v">{tenant.electricityMeterNo || `EM-${tenant.flat}`}</div>
             </div>
             <div>
-              <div className="k">Status</div>
-              <div className="v" style={{ color: bill.status === 'paid' ? 'var(--green)' : (bill.status === 'overdue' ? 'var(--red)' : '#F2C078') }}>
-                {bill.status.toUpperCase()}
-              </div>
+              <div className="k">Water Meter No.</div>
+              <div className="v">{tenant.waterMeterNo || `WM-${tenant.flat}`}</div>
             </div>
           </div>
 
@@ -574,12 +578,13 @@ function BillPreview() {
               <div className="section-label"><div className="dot"></div><span>Electricity — Meter Reading</span><div className="line"></div></div>
               <table className="reading-table">
                 <thead>
-                  <tr><th>Reading</th><th>Date</th><th className="num">Off-Peak</th><th className="num">Peak</th></tr>
+                  <tr><th>Reading</th><th>Date</th><th className="num">Unit (Flat Rate)</th><th className="num">Amount</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td>Current</td><td>{formatDate(bill.createdAt)}</td><td className="num">{bill.electricityCurrentReading}</td><td className="num">0</td></tr>
-                  <tr><td>Previous</td><td>—</td><td className="num">{bill.electricityPreviousReading}</td><td className="num">0</td></tr>
-                  <tr><td>Used Unit</td><td>—</td><td className="num">{bill.electricityUnits} kWh</td><td className="num">0 kWh</td></tr>
+                  <tr><td>Current</td><td>{formatDate(bill.createdAt)}</td><td className="num">{bill.electricityCurrentReading}</td><td className="num">—</td></tr>
+                  <tr><td>Previous</td><td>—</td><td className="num">{bill.electricityPreviousReading}</td><td className="num">—</td></tr>
+                  <tr><td>Unit Used</td><td>—</td><td className="num">{bill.electricityUnits} Unit</td><td className="num">—</td></tr>
+                  <tr><td>Rate per Unit</td><td>—</td><td className="num">—</td><td className="num">{formatCurrency(tenant.electricityRate)}/Unit</td></tr>
                 </tbody>
               </table>
             </>
@@ -591,12 +596,13 @@ function BillPreview() {
               <div className="section-label"><div className="dot"></div><span>Water &amp; Sewerage — Meter Reading</span><div className="line"></div></div>
               <table className="reading-table">
                 <thead>
-                  <tr><th>Reading</th><th>Date</th><th className="num">Unit</th><th className="num">Rate</th></tr>
+                  <tr><th>Reading</th><th>Date</th><th className="num">Unit</th><th className="num">Amount</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td>Current</td><td>{formatDate(bill.createdAt)}</td><td className="num">{bill.waterCurrentReading}</td><td className="num">{formatCurrency(tenant.waterRate)}</td></tr>
+                  <tr><td>Current</td><td>{formatDate(bill.createdAt)}</td><td className="num">{bill.waterCurrentReading}</td><td className="num">—</td></tr>
                   <tr><td>Previous</td><td>—</td><td className="num">{bill.waterPreviousReading}</td><td className="num">—</td></tr>
-                  <tr><td>Used Unit</td><td>—</td><td className="num">{bill.waterUnits}</td><td className="num">{formatCurrency(bill.waterUnitCost)}</td></tr>
+                  <tr><td>Unit Used</td><td>—</td><td className="num">{bill.waterUnits} Unit</td><td className="num">—</td></tr>
+                  <tr><td>Rate per Unit</td><td>—</td><td className="num">—</td><td className="num">{formatCurrency(tenant.waterRate)}/Unit</td></tr>
                 </tbody>
               </table>
             </>
@@ -613,7 +619,7 @@ function BillPreview() {
                   <>
                     {bill.electricityUnits != null ? (
                       <>
-                        <tr><td>Energy Charge (Off-Peak)</td><td>{formatCurrency(bill.electricityUnitCost)}</td></tr>
+                        <tr><td>Energy Charge</td><td>{formatCurrency(bill.electricityUnitCost)}</td></tr>
                         {bill.electricityDemandCharge > 0 && <tr><td>Demand Charge</td><td>{formatCurrency(bill.electricityDemandCharge)}</td></tr>}
                       </>
                     ) : (
@@ -625,9 +631,12 @@ function BillPreview() {
                 {showWater && (
                   <>
                     {bill.waterUnits != null ? (
-                      <tr><td>Water &amp; Sewerage Charge</td><td>{formatCurrency(bill.waterUnitCost)}</td></tr>
+                      <>
+                        <tr><td>Water Charge</td><td>{formatCurrency(bill.waterCharge ?? bill.waterUnitCost / 2)}</td></tr>
+                        <tr><td>Sewerage Charge</td><td>{formatCurrency(bill.sewerageCharge ?? bill.waterUnitCost / 2)}</td></tr>
+                      </>
                     ) : (
-                      <tr><td>Washa (Water) Bill (Incl. VAT)</td><td>{formatCurrency(bill.water)}</td></tr>
+                      <tr><td>Water &amp; Sewerage Bill (Incl. VAT)</td><td>{formatCurrency(bill.water)}</td></tr>
                     )}
                   </>
                 )}

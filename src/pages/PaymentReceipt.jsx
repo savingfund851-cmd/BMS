@@ -53,10 +53,9 @@ function PaymentReceipt() {
 
   const billNumber = generateBillNumber(building.id, tenant.id, bill.month, bill.year)
   const receiptNo = `RCP-${payment.id.substring(0,8).toUpperCase()}`
-  const orgName = settings.companyName || building.name
-  const orgAddr = settings.companyAddress || building.address
+  const buildingName = building.name
+  const buildingAddr = building.address
   const orgPhone = settings.companyPhone || ''
-  const crestInitials = orgName.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
 
   const totalBillPaid = allBillPayments.reduce((s, p) => s + p.amount, 0)
   const isPaidInFull = totalBillPaid >= bill.totalAmount
@@ -126,7 +125,7 @@ function PaymentReceipt() {
 
         .rc-title-block { text-align: right; }
         .rc-title-block h2 {
-          font-size: 36px; font-weight: 900; letter-spacing: 4px;
+          font-size: 28px; font-weight: 900; letter-spacing: 3px;
           color: #B8873B; text-transform: uppercase; margin: 0;
         }
         .rc-receipt-no { font-size: 13px; color: #475569; margin-top: 6px; font-weight: 600; }
@@ -154,24 +153,14 @@ function PaymentReceipt() {
         /* Amount hero */
         .rc-amount-hero {
           background: linear-gradient(135deg, #1B2A4A 0%, #0f172a 100%);
-          padding: 28px 40px;
+          padding: 20px 40px;
           display: flex;
           align-items: center;
           justify-content: space-between;
         }
-        .rc-amount-label { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: #94a3b8; }
-        .rc-amount-value { font-size: 42px; font-weight: 900; color: #ffffff; margin-top: 4px; }
+        .rc-amount-label { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #94a3b8; }
+        .rc-amount-value { font-size: 30px; font-weight: 900; color: #ffffff; margin-top: 4px; }
         .rc-amount-sub { font-size: 12px; color: #64748b; margin-top: 4px; }
-        .rc-paid-badge {
-          background: rgba(16,185,129,0.15);
-          border: 2px solid #10b981;
-          color: #10b981;
-          font-size: 18px; font-weight: 800;
-          letter-spacing: 3px; text-transform: uppercase;
-          padding: 10px 22px; border-radius: 10px;
-          display: flex; align-items: center; gap: 8px;
-          transform: rotate(-3deg);
-        }
 
         /* Breakdown */
         .rc-section { padding: 24px 40px; border-bottom: 1px solid #e2e8f0; }
@@ -251,21 +240,15 @@ function PaymentReceipt() {
           {/* Header */}
           <div className="rc-header">
             <div className="rc-brand">
-              {settings.logoUrl ? (
-                <img src={settings.logoUrl} alt="Logo" className="rc-logo-img" />
-              ) : (
-                <div className="rc-logo-box">{crestInitials}</div>
-              )}
               <div>
-                <div className="rc-org-name">{orgName}</div>
-                <div className="rc-org-addr">
-                  {orgAddr && <span>{orgAddr}</span>}
-                  {orgPhone && <><br/>{orgPhone}</>}
-                </div>
+                <div className="rc-org-name" style={{ fontSize: '28px', fontWeight: 900, letterSpacing: '3px' }}>BMS</div>
+                <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '2px', textTransform: 'uppercase', marginTop: '2px' }}>Building Management System</div>
+                <div style={{ fontSize: '14px', fontWeight: 700, color: '#1B2A4A', marginTop: '6px' }}>{buildingName}</div>
+                <div className="rc-org-addr">{buildingAddr}</div>
               </div>
             </div>
             <div className="rc-title-block">
-              <h2>RECEIPT</h2>
+              <h2>MONEY RECEIPT</h2>
               <div className="rc-receipt-no">#{receiptNo}</div>
               <div className="rc-date">Issued: {formatDate(payment.paymentDate)}</div>
             </div>
@@ -304,10 +287,6 @@ function PaymentReceipt() {
               <div className="rc-amount-label">Amount Received</div>
               <div className="rc-amount-value">{formatCurrency(payment.amount)}</div>
               <div className="rc-amount-sub">Payment for {bill.month} {bill.year} Bill</div>
-            </div>
-            <div className="rc-paid-badge">
-              <CheckCircle size={20} />
-              PAID
             </div>
           </div>
 

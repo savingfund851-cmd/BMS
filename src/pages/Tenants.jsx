@@ -41,9 +41,11 @@ function Tenants() {
     name: '', buildingId: '', flat: '', floor: '', phone: '', email: '',
     monthlyRent: '', advanceDeposit: '', moveInDate: '', status: 'active',
     // Electricity meter
+    electricityMeterNo: '',
     electricityRate: '', electricityStartUnit: '', electricityStartDate: '',
     sectionLoad: '',
     // Water meter
+    waterMeterNo: '',
     waterRate: '', waterStartUnit: '', waterStartDate: ''
   })
 
@@ -107,11 +109,13 @@ function Tenants() {
       moveInDate: form.moveInDate,
       status: form.status,
       // electricity
+      electricityMeterNo: form.electricityMeterNo,
       electricityRate: parseFloat(form.electricityRate) || 0,
       electricityStartUnit: parseFloat(form.electricityStartUnit) || 0,
       electricityStartDate: form.electricityStartDate,
       sectionLoad: parseFloat(form.sectionLoad) || 0,
       // water
+      waterMeterNo: form.waterMeterNo,
       waterRate: parseFloat(form.waterRate) || 0,
       waterStartUnit: parseFloat(form.waterStartUnit) || 0,
       waterStartDate: form.waterStartDate,
@@ -128,8 +132,8 @@ function Tenants() {
     setForm({ 
       name: '', buildingId: '', flat: '', floor: '', phone: '', email: '', 
       monthlyRent: '', advanceDeposit: '', moveInDate: '', status: 'active',
-      electricityRate: '', electricityStartUnit: '', electricityStartDate: '', sectionLoad: '',
-      waterRate: '', waterStartUnit: '', waterStartDate: ''
+      electricityMeterNo: '', electricityRate: '', electricityStartUnit: '', electricityStartDate: '', sectionLoad: '',
+      waterMeterNo: '', waterRate: '', waterStartUnit: '', waterStartDate: ''
     })
   }
 
@@ -150,10 +154,12 @@ function Tenants() {
       floor: tenant.floor, phone: tenant.phone, email: tenant.email,
       monthlyRent: tenant.monthlyRent, advanceDeposit: tenant.advanceDeposit,
       moveInDate: tenant.moveInDate, status: tenant.status,
+      electricityMeterNo: tenant.electricityMeterNo || '',
       electricityRate: tenant.electricityRate || '',
       electricityStartUnit: tenant.electricityStartUnit ?? '',
       electricityStartDate: tenant.electricityStartDate || '',
       sectionLoad: tenant.sectionLoad || '',
+      waterMeterNo: tenant.waterMeterNo || '',
       waterRate: tenant.waterRate || '',
       waterStartUnit: tenant.waterStartUnit ?? '',
       waterStartDate: tenant.waterStartDate || ''
@@ -355,6 +361,13 @@ function Tenants() {
                 <div className="form-section-title" style={{display:'flex',alignItems:'center',gap:'8px'}}>
                   ⚡ Electricity Meter Settings
                 </div>
+                <div className="form-group">
+                  <label className="form-label">Electricity Meter No. *</label>
+                  <input className="form-input" type="text"
+                    value={form.electricityMeterNo}
+                    onChange={e => setForm({...form, electricityMeterNo: e.target.value})}
+                    placeholder="e.g. EM-10123" required />
+                </div>
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Rate per Unit (৳/kWh)</label>
@@ -395,6 +408,13 @@ function Tenants() {
                 {/* ── Water Meter Settings ────────────────────────────────── */}
                 <div className="form-section-title" style={{display:'flex',alignItems:'center',gap:'8px'}}>
                   💧 Water Meter Settings
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Water Meter No. *</label>
+                  <input className="form-input" type="text"
+                    value={form.waterMeterNo}
+                    onChange={e => setForm({...form, waterMeterNo: e.target.value})}
+                    placeholder="e.g. WM-20456" required />
                 </div>
                 <div className="form-row">
                   <div className="form-group">
