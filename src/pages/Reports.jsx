@@ -40,7 +40,7 @@ function Reports() {
   ]
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
+    const user = JSON.parse(sessionStorage.getItem('tba_current_user') || '{}')
     setCurrentUser(user)
     
     if (user.role !== 'superadmin' && user.permissions && !user.permissions.includes('view_reports')) {

@@ -51,7 +51,7 @@ function Tenants() {
 
   useEffect(() => {
     const init = () => {
-      const user = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
+      const user = JSON.parse(sessionStorage.getItem('tba_current_user') || '{}')
       setCurrentUser(user)
       if (user.role !== 'superadmin' && user.permissions && !user.permissions.includes('manage_tenants')) {
         navigate('/')
@@ -68,7 +68,7 @@ function Tenants() {
     }
     init()
 
-    const handler = () => loadTenants(JSON.parse(localStorage.getItem('tba_current_user') || '{}'))
+    const handler = () => loadTenants(JSON.parse(sessionStorage.getItem('tba_current_user') || '{}'))
     window.addEventListener('storeUpdated', handler)
     return () => window.removeEventListener('storeUpdated', handler)
   }, [navigate])

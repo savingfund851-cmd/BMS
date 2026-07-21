@@ -59,8 +59,8 @@ function Profile({ user }) {
       setFormData({ ...formData, oldPassword: '', newPassword: '', confirmPassword: '' })
       
       // Update local storage so the session has the latest name/email
-      const current = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
-      localStorage.setItem('tba_current_user', JSON.stringify({ ...current, ...updates }))
+      const current = JSON.parse(sessionStorage.getItem('tba_current_user') || '{}')
+      sessionStorage.setItem('tba_current_user', JSON.stringify({ ...current, ...updates }))
       
     } catch (err) {
       setErrorMsg('Failed to update profile. Please try again.')

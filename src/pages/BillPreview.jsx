@@ -44,7 +44,7 @@ function BillPreview() {
         setPayments(bPayments)
         setTotalPaid(bPayments.reduce((sum, p) => sum + p.amount, 0))
       }
-      setCurrentUser(JSON.parse(localStorage.getItem('tba_current_user') || '{}'))
+      setCurrentUser(JSON.parse(sessionStorage.getItem('tba_current_user') || '{}'))
     }
     fetchData()
 

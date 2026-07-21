@@ -34,7 +34,7 @@ function Payments() {
 
   useEffect(() => {
     const init = () => {
-      const user = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
+      const user = JSON.parse(sessionStorage.getItem('tba_current_user') || '{}')
       setCurrentUser(user)
       if (user.role !== 'superadmin' && user.permissions && !user.permissions.includes('manage_payments')) {
         navigate('/')
@@ -55,7 +55,7 @@ function Payments() {
     init()
 
     const handleUpdate = () => {
-      const user = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
+      const user = JSON.parse(sessionStorage.getItem('tba_current_user') || '{}')
       loadPayments(user)
       loadPendingBills(user)
     }

@@ -75,7 +75,7 @@ function Billing() {
   const [deletingId, setDeletingId] = useState(null)
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
+    const user = JSON.parse(sessionStorage.getItem('tba_current_user') || '{}')
     setCurrentUser(user)
     if (user.role !== 'superadmin' && user.permissions && !user.permissions.includes('manage_billing')) {
       navigate('/')
@@ -96,7 +96,7 @@ function Billing() {
     
     // Listen for payments to update bill statuses dynamically
     const handleUpdate = () => {
-      loadBills(JSON.parse(localStorage.getItem('tba_current_user') || '{}'))
+      loadBills(JSON.parse(sessionStorage.getItem('tba_current_user') || '{}'))
       setSettings(settingsStore.get() || {})
     }
     window.addEventListener('billsUpdated', handleUpdate)

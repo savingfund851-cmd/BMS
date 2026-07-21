@@ -31,14 +31,14 @@ function App() {
     window.addEventListener('storeUpdated', handleUpdate)
 
     const checkUser = () => {
-      const savedUser = localStorage.getItem('tba_current_user')
+      const savedUser = sessionStorage.getItem('tba_current_user')
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser)
         // getById reads from cache (synchronous)
         const freshUser = userStore.getById(parsedUser.id)
         setUser(freshUser || parsedUser)
         if (freshUser) {
-          localStorage.setItem('tba_current_user', JSON.stringify(freshUser))
+          sessionStorage.setItem('tba_current_user', JSON.stringify(freshUser))
         }
       }
     }
@@ -47,14 +47,45 @@ function App() {
     return () => window.removeEventListener('storeUpdated', handleUpdate)
   }, [])
 
+  // 12-hour inactivity logout
+  useEffect(() => {
+    if (!user) return
+
+    const TIMEOUT = 12 * 60 * 60 * 1000 // 12 hours
+    const checkTimeout = () => {
+      const lastActive = sessionStorage.getItem('tba_last_activity')
+      if (lastActive && Date.now() - parseInt(lastActive) > TIMEOUT) {
+        handleLogout()
+      }
+    }
+
+    const updateActivity = () => {
+      sessionStorage.setItem('tba_last_activity', Date.now())
+    }
+
+    updateActivity()
+    const interval = setInterval(checkTimeout, 60000)
+
+    window.addEventListener('mousemove', updateActivity)
+    window.addEventListener('keydown', updateActivity)
+    window.addEventListener('click', updateActivity)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('mousemove', updateActivity)
+      window.removeEventListener('keydown', updateActivity)
+      window.removeEventListener('click', updateActivity)
+    }
+  }, [user])
+
   const handleLogin = (userData) => {
     setUser(userData)
-    localStorage.setItem('tba_current_user', JSON.stringify(userData))
+    sessionStorage.setItem('tba_current_user', JSON.stringify(userData))
   }
 
   const handleLogout = () => {
     setUser(null)
-    localStorage.removeItem('tba_current_user')
+    sessionStorage.removeItem('tba_current_user')
   }
 
   if (!user) {

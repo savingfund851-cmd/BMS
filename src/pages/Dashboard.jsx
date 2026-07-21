@@ -24,7 +24,7 @@ function Dashboard() {
   const [buildingStats, setBuildingStats] = useState([])
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
+    const user = JSON.parse(sessionStorage.getItem('tba_current_user') || '{}')
     setCurrentUser(user)
     
     // Quick permission check

@@ -19,7 +19,7 @@ function Buildings() {
   const [deletingId, setDeletingId] = useState(null)
 
   useEffect(() => { 
-    const user = JSON.parse(localStorage.getItem('tba_current_user') || '{}')
+    const user = JSON.parse(sessionStorage.getItem('tba_current_user') || '{}')
     setCurrentUser(user)
     setSettings(settingsStore.get() || {})
     if (user.role !== 'superadmin' && user.permissions && !user.permissions.includes('manage_buildings')) {
@@ -29,7 +29,7 @@ function Buildings() {
     loadBuildings(user) 
 
     const handler = () => {
-      loadBuildings(JSON.parse(localStorage.getItem('tba_current_user') || '{}'))
+      loadBuildings(JSON.parse(sessionStorage.getItem('tba_current_user') || '{}'))
       setSettings(settingsStore.get() || {})
     }
     window.addEventListener('storeUpdated', handler)

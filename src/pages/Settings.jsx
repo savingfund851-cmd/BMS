@@ -22,7 +22,7 @@ function Settings() {
 
   useEffect(() => {
     const init = () => {
-      const savedUser = localStorage.getItem('tba_current_user')
+      const savedUser = sessionStorage.getItem('tba_current_user')
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser)
         setCurrentUser(parsedUser)
