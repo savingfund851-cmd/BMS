@@ -477,7 +477,7 @@ function Billing() {
 
       {/* ═══ GENERATE MODAL ═══ */}
       {showGenerateModal && (
-        <div className="modal-overlay" onClick={resetModal}>
+        <div className="modal-overlay">
           <div className="modal modal-xl animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title-group">

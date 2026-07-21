@@ -290,7 +290,7 @@ function Tenants() {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay">
           <div className="modal modal-lg animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>{editingTenant ? 'Edit Tenant' : 'Add New Tenant'}</h3>

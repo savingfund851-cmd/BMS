@@ -361,7 +361,7 @@ function Payments() {
 
       {/* Payment Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay">
           <div className="modal animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Record Payment</h3>
