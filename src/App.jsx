@@ -19,7 +19,7 @@ import { initializeDefaultData, userStore } from './data/store'
 
 function App() {
   const [user, setUser] = useState(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768)
   const [lastUpdate, setLastUpdate] = useState(Date.now())
 
   useEffect(() => {
@@ -31,14 +31,7 @@ function App() {
     window.addEventListener('storeUpdated', handleUpdate)
 
     const checkUser = () => {
-      let savedUser = sessionStorage.getItem('tba_current_user')
-      if (!savedUser) {
-        // Fallback to remember me
-        savedUser = localStorage.getItem('tba_remember_me')
-        if (savedUser) {
-          sessionStorage.setItem('tba_current_user', savedUser)
-        }
-      }
+      const savedUser = sessionStorage.getItem('tba_current_user')
       
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser)
@@ -47,9 +40,6 @@ function App() {
         setUser(freshUser || parsedUser)
         if (freshUser) {
           sessionStorage.setItem('tba_current_user', JSON.stringify(freshUser))
-          if (localStorage.getItem('tba_remember_me')) {
-            localStorage.setItem('tba_remember_me', JSON.stringify(freshUser))
-          }
         }
       }
     }
@@ -97,7 +87,7 @@ function App() {
   const handleLogout = () => {
     setUser(null)
     sessionStorage.removeItem('tba_current_user')
-    localStorage.removeItem('tba_remember_me')
+    localStorage.removeItem('tba_saved_creds')
   }
 
   if (!user) {

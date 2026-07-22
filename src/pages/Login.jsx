@@ -22,6 +22,16 @@ function Login({ onLogin }) {
     const s = settingsStore.get() || {}
     setSettings(s)
     
+    // Auto-fill credentials if remembered
+    try {
+      const savedCreds = localStorage.getItem('tba_saved_creds')
+      if (savedCreds) {
+        const { u, p } = JSON.parse(savedCreds)
+        if (u) setUsername(u)
+        if (p) setPassword(p)
+      }
+    } catch(e) {}
+    
     // Calculate stats for ticker
     const bldgs = buildingStore.getAll()
     const bls = billStore.getAll()
@@ -160,9 +170,9 @@ function Login({ onLogin }) {
       const user = await userStore.authenticate(username, password)
       if (user) {
         if (rememberMe) {
-          localStorage.setItem('tba_remember_me', JSON.stringify(user))
+          localStorage.setItem('tba_saved_creds', JSON.stringify({ u: username, p: password }))
         } else {
-          localStorage.removeItem('tba_remember_me')
+          localStorage.removeItem('tba_saved_creds')
         }
         // slight delay to show loading animation before redirect
         setTimeout(() => {

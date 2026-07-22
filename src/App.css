@@ -1800,7 +1800,9 @@
 }
 
 @media (max-width: 768px) {
-  .app-layout { grid-template-columns: 1fr; }
+  .app-layout, .app-layout.sidebar-collapsed { 
+    display: block !important;
+  }
   .sidebar {
     position: fixed;
     left: -260px;
