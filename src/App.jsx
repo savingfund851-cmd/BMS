@@ -31,7 +31,15 @@ function App() {
     window.addEventListener('storeUpdated', handleUpdate)
 
     const checkUser = () => {
-      const savedUser = sessionStorage.getItem('tba_current_user')
+      let savedUser = sessionStorage.getItem('tba_current_user')
+      if (!savedUser) {
+        // Fallback to remember me
+        savedUser = localStorage.getItem('tba_remember_me')
+        if (savedUser) {
+          sessionStorage.setItem('tba_current_user', savedUser)
+        }
+      }
+      
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser)
         // getById reads from cache (synchronous)
@@ -39,6 +47,9 @@ function App() {
         setUser(freshUser || parsedUser)
         if (freshUser) {
           sessionStorage.setItem('tba_current_user', JSON.stringify(freshUser))
+          if (localStorage.getItem('tba_remember_me')) {
+            localStorage.setItem('tba_remember_me', JSON.stringify(freshUser))
+          }
         }
       }
     }
@@ -86,6 +97,7 @@ function App() {
   const handleLogout = () => {
     setUser(null)
     sessionStorage.removeItem('tba_current_user')
+    localStorage.removeItem('tba_remember_me')
   }
 
   if (!user) {

@@ -7,6 +7,7 @@ function Login({ onLogin }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [settings, setSettings] = useState({})
@@ -158,6 +159,11 @@ function Login({ onLogin }) {
     try {
       const user = await userStore.authenticate(username, password)
       if (user) {
+        if (rememberMe) {
+          localStorage.setItem('tba_remember_me', JSON.stringify(user))
+        } else {
+          localStorage.removeItem('tba_remember_me')
+        }
         // slight delay to show loading animation before redirect
         setTimeout(() => {
           onLogin(user)
@@ -268,7 +274,13 @@ function Login({ onLogin }) {
             </div>
 
             <div className="row-between">
-              <label className="remember"><input type="checkbox" defaultChecked /> Remember Me</label>
+              <label className="remember">
+                <input 
+                  type="checkbox" 
+                  checked={rememberMe} 
+                  onChange={(e) => setRememberMe(e.target.checked)} 
+                /> Remember Password
+              </label>
               <span className="forgot" style={{ cursor: 'pointer' }} onClick={() => alert('Please contact Super Admin to reset your password.')}>Forgot Password?</span>
             </div>
 

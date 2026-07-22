@@ -1820,6 +1820,25 @@
   .bill-header { flex-direction: column; gap: var(--sp-4); }
   .bill-meta { text-align: left; }
   .bill-meta-item { justify-content: flex-start; }
+  
+  /* Prevent horizontal overflow on page, allow cards to scroll horizontally */
+  .main-content {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  .glass-card {
+    overflow-x: auto;
+    padding: var(--sp-4);
+  }
+  .data-table {
+    min-width: 700px; /* Force table scrolling on mobile */
+  }
+  .modal {
+    width: 95%;
+    max-width: 95%;
+    margin: 10px auto;
+    padding: var(--sp-4);
+  }
   .bill-parties { flex-direction: column; gap: var(--sp-4); }
   .bill-preview { padding: var(--sp-6); }
   .credentials-grid { grid-template-columns: 1fr; }
