@@ -530,7 +530,7 @@ function Billing() {
                         const monthNum = String(MONTHS.indexOf(newMonth) + 1).padStart(2,'0')
                         const day = String(settingsStore.get()?.billDueDay || 10).padStart(2,'0')
                         setGenBase({...genBase, month: newMonth, dueDate: `${genBase.year}-${monthNum}-${day}`})
-                      }}>>
+                      }}>
                       {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                   </div>
