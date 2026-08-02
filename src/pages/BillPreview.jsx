@@ -547,10 +547,8 @@ function BillPreview() {
           {/* Letterhead */}
           <div className="letterhead">
             <div style={{ flex: 1 }}>
-              <div className="org-name" style={{ fontSize: '32px', letterSpacing: '3px', fontWeight: 900 }}>BMS</div>
-              <div style={{ fontFamily: 'Lora, serif', fontSize: '13px', color: 'var(--ink-soft)', letterSpacing: '2px', textTransform: 'uppercase', marginTop: '2px' }}>Building Management System</div>
-              <div style={{ marginTop: '6px', fontSize: '13px', color: 'var(--navy)', fontWeight: 700 }}>{orgName}</div>
-              <div style={{ fontSize: '11px', color: 'var(--ink-soft)', marginTop: '2px' }}>{orgAddr}</div>
+              <div className="org-name" style={{ fontSize: '24px', letterSpacing: '0.5px', fontWeight: 800 }}>{orgName}</div>
+              <div style={{ fontSize: '12px', color: 'var(--ink-soft)', marginTop: '2px' }}>{orgAddr}</div>
             </div>
             <div className="doc-tag">
               <div className="label">Invoice No.</div>
@@ -716,7 +714,9 @@ function BillPreview() {
             <div className="note">
               Please settle payment before the due date to avoid late charges.<br/>
               For queries, contact the building management office.<br/>
-              This is a system-generated bill from Utility Manager.
+              <span style={{ display: 'inline-block', marginTop: '4px', color: 'var(--ink-soft)' }}>
+                system generated invoice | software powered by: <strong style={{ fontSize: '12px', color: 'var(--navy)', fontWeight: 800 }}>BMS</strong> (Building Management System)
+              </span>
             </div>
             <div className="sign">
               <div className="line"></div>
