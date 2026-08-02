@@ -562,14 +562,18 @@ function BillPreview() {
               <div className="k">Unit / Tenant</div>
               <div className="v">{tenant.name} — Floor {tenant.floor}, Flat {tenant.flat}</div>
             </div>
-            <div>
-              <div className="k">Electricity Meter No.</div>
-              <div className="v">{tenant.electricityMeterNo || `EM-${tenant.flat}`}</div>
-            </div>
-            <div>
-              <div className="k">Water Meter No.</div>
-              <div className="v">{tenant.waterMeterNo || `WM-${tenant.flat}`}</div>
-            </div>
+            {showElectricity && (
+              <div>
+                <div className="k">Electricity Meter No.</div>
+                <div className="v">{tenant.electricityMeterNo || `EM-${tenant.flat}`}</div>
+              </div>
+            )}
+            {showWater && (
+              <div>
+                <div className="k">Water Meter No.</div>
+                <div className="v">{tenant.waterMeterNo || `WM-${tenant.flat}`}</div>
+              </div>
+            )}
           </div>
 
           {/* Electricity readings */}
