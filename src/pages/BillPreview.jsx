@@ -255,7 +255,7 @@ function BillPreview() {
             background: var(--paper);
             box-shadow: 0 20px 60px rgba(0,0,0,0.35);
             position: relative;
-            padding: 14mm 14mm 12mm;
+            padding: 10mm 12mm 10mm;
             color: var(--ink);
             font-family: 'Inter', sans-serif;
             box-sizing: border-box;
@@ -319,11 +319,11 @@ function BillPreview() {
 
           .bill-title {
             text-align: center;
-            margin: 16px 0 4px;
+            margin: 10px 0 2px;
           }
           .bill-title h1 {
             font-family: 'Lora', serif;
-            font-size: 15px;
+            font-size: 14px;
             letter-spacing: 4px;
             text-transform: uppercase;
             color: var(--navy);
@@ -332,7 +332,7 @@ function BillPreview() {
           }
           .bill-title .rule {
             width: 60px; height: 2px; background: var(--brass);
-            margin: 6px auto 0;
+            margin: 4px auto 0;
           }
 
           /* Meta strip */
@@ -340,51 +340,51 @@ function BillPreview() {
             display: grid;
             grid-template-columns: 1.3fr 1fr 1fr;
             gap: 0;
-            margin-top: 16px;
+            margin-top: 10px;
             border: 1px solid var(--paper-line);
             background: #fff;
           }
           .meta-cell {
-            padding: 10px 14px;
+            padding: 8px 12px;
             border-right: 1px solid var(--paper-line);
           }
           .meta-cell:last-child { border-right: none; }
           .meta-cell .k {
-            font-size: 9.5px;
+            font-size: 9px;
             text-transform: uppercase;
             letter-spacing: 1.5px;
             color: var(--ink-soft);
             font-weight: 600;
           }
           .meta-cell .v {
-            font-size: 13.5px;
+            font-size: 13px;
             font-weight: 600;
             color: var(--navy);
-            margin-top: 3px;
+            margin-top: 2px;
           }
           .meta-cell .v.due { color: var(--red); }
 
           .tenant-strip {
             display: flex;
             justify-content: space-between;
-            margin-top: 10px;
-            padding: 10px 14px;
+            margin-top: 8px;
+            padding: 8px 12px;
             background: var(--navy);
             color: #fff;
           }
           .tenant-strip div .k {
-            font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--brass-light);
+            font-size: 8.5px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--brass-light);
           }
           .tenant-strip div .v {
-            font-size: 14px; font-weight: 600; margin-top: 2px;
+            font-size: 13px; font-weight: 600; margin-top: 2px;
           }
 
           /* Section label */
           .section-label {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin: 22px 0 8px;
+            gap: 8px;
+            margin: 12px 0 6px;
           }
           .section-label .dot {
             width: 9px; height: 9px; background: var(--brass);
@@ -409,16 +409,16 @@ function BillPreview() {
           .reading-table th {
             background: var(--navy);
             color: #fff;
-            font-size: 9.5px;
+            font-size: 9px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            padding: 8px 10px;
+            padding: 6px 8px;
             text-align: left;
             font-weight: 600;
           }
           .reading-table td {
-            padding: 8px 10px;
-            font-size: 12px;
+            padding: 6px 8px;
+            font-size: 11.5px;
             border-bottom: 1px solid var(--paper-line);
             font-family: 'JetBrains Mono', monospace;
           }
@@ -435,7 +435,7 @@ function BillPreview() {
           .num { text-align: right; }
 
           .two-col {
-            margin-top: 18px;
+            margin-top: 10px;
           }
 
           .charges-table {
@@ -445,8 +445,8 @@ function BillPreview() {
             background: #fff;
           }
           .charges-table td {
-            padding: 12px 16px;
-            font-size: 14.5px;
+            padding: 7px 12px;
+            font-size: 13px;
             border-bottom: 1px solid var(--paper-line);
           }
           .charges-table td:last-child {
@@ -457,34 +457,34 @@ function BillPreview() {
           .charges-table tr.subtotal td {
             border-top: 2px solid var(--navy);
             font-weight: 700;
-            font-size: 15px;
+            font-size: 13.5px;
           }
           .charges-table tr.grand td {
             background: var(--navy);
             color: #fff;
-            font-size: 20px;
+            font-size: 17px;
             font-weight: 700;
-            padding: 16px;
+            padding: 10px 12px;
           }
           .charges-table tr.grand td:last-child { color: var(--brass-light); }
           .charges-table tr.overdue td {
             background: #FBEAE9;
             color: var(--red);
             font-weight: 700;
-            font-size: 13px;
+            font-size: 12px;
           }
           .charges-table tr.payment td {
             color: var(--green);
             font-weight: 600;
-            font-size: 14px;
+            font-size: 12.5px;
           }
 
           .footer {
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            margin-top: 34px;
-            padding-top: 14px;
+            margin-top: 16px;
+            padding-top: 8px;
             border-top: 1px solid var(--paper-line);
           }
           .footer .note {
@@ -509,14 +509,36 @@ function BillPreview() {
             text-transform: uppercase;
           }
 
+          @page {
+            size: A4 portrait;
+            margin: 0;
+          }
           @media print {
-            body { background: #fff !important; padding: 0 !important; }
-            .a4-invoice-container { padding: 0 !important; background: #fff !important; }
-            .a4-page { box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
+            html, body {
+              width: 210mm !important;
+              height: 297mm !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: hidden !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            .a4-invoice-container { padding: 0 !important; background: #fff !important; margin: 0 !important; }
+            .a4-page {
+              box-shadow: none !important;
+              margin: 0 !important;
+              width: 210mm !important;
+              height: 297mm !important;
+              min-height: 297mm !important;
+              max-height: 297mm !important;
+              padding: 10mm 12mm !important;
+              overflow: hidden !important;
+              page-break-inside: avoid !important;
+              page-break-after: avoid !important;
+            }
             .no-print { display: none !important; }
-            .app-layout { padding: 0 !important; }
+            .app-layout, .main-area, .main-content { padding: 0 !important; margin: 0 !important; overflow: visible !important; }
             .sidebar, .header { display: none !important; }
-            .main-content { margin: 0 !important; padding: 0 !important; }
           }
         `}</style>
 
