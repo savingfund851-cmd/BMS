@@ -64,6 +64,19 @@ function BillPreview() {
     }
   }, [searchParams, bill, showAuthModal, showEditModal])
 
+  // Dynamically set document.title so PDF save filename uses: Tenant Name - Bill Type - Month Year
+  useEffect(() => {
+    if (tenant && bill) {
+      const prevTitle = document.title
+      const titleType = getBillTitle()
+      const formattedTitleType = titleType.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+      document.title = `${tenant.name} - ${formattedTitleType} - ${bill.month} ${bill.year}`
+      return () => {
+        document.title = prevTitle
+      }
+    }
+  }, [tenant, bill])
+
   const handlePrint = () => { window.print() }
 
   const handleEditClick = () => {
