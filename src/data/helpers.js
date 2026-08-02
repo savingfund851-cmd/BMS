@@ -116,6 +116,62 @@ export function calculateBillTotal(bill) {
   );
 }
 
+const MONTHS_LIST = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+/**
+ * Calculate next month's due date for a bill.
+ * @param {string} monthName
+ * @param {number|string} yearVal
+ * @param {number} dueDay
+ * @returns {string} YYYY-MM-DD
+ */
+export function calcDueDate(monthName, yearVal, dueDay = 10) {
+  const mIndex = MONTHS_LIST.indexOf(monthName);
+  if (mIndex === -1) return '';
+  const y = parseInt(yearVal, 10);
+  let nextMIndex = mIndex + 1;
+  let nextYear = y;
+  if (nextMIndex > 11) {
+    nextMIndex = 0;
+    nextYear = y + 1;
+  }
+  const mStr = String(nextMIndex + 1).padStart(2, '0');
+  const dStr = String(dueDay).padStart(2, '0');
+  return `${nextYear}-${mStr}-${dStr}`;
+}
+
+/**
+ * Get effective due date for a bill.
+ * Auto-corrects legacy bills where due date was set in the bill's month instead of next month.
+ * @param {object} bill
+ * @param {number} defaultDueDay
+ * @returns {string} YYYY-MM-DD
+ */
+export function getEffectiveDueDate(bill, defaultDueDay = 10) {
+  if (!bill || !bill.dueDate) return bill?.dueDate || '';
+  if (!bill.month || !bill.year) return bill.dueDate;
+
+  const mIndex = MONTHS_LIST.indexOf(bill.month);
+  if (mIndex === -1) return bill.dueDate;
+
+  const parts = String(bill.dueDate).split('-');
+  if (parts.length === 3) {
+    const dueYear = parseInt(parts[0], 10);
+    const dueMonth = parseInt(parts[1], 10) - 1; // 0-based
+    const dueDay = parseInt(parts[2], 10);
+
+    // If due date was saved in the same month as the bill (e.g. July bill with July due date),
+    // auto-adjust to next month (August)
+    if (dueYear === parseInt(bill.year, 10) && dueMonth === mIndex) {
+      return calcDueDate(bill.month, bill.year, dueDay || defaultDueDay);
+    }
+  }
+  return bill.dueDate;
+}
+
 /**
  * Determine dynamic status based on due date.
  * If pending/partial and past due date, it becomes overdue.
@@ -125,9 +181,10 @@ export function calculateBillTotal(bill) {
 export function getDynamicBillStatus(bill) {
   let status = bill.status || 'pending';
   if (status === 'pending' || status === 'partial') {
-    if (bill.dueDate) {
+    const dueDate = getEffectiveDueDate(bill);
+    if (dueDate) {
       const today = new Date().toISOString().split('T')[0];
-      if (bill.dueDate < today) {
+      if (dueDate < today) {
         status = 'overdue';
       }
     }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Printer, Edit3, Lock, X } from 'lucide-react'
 import { billStore, tenantStore, buildingStore, settingsStore, paymentStore, userStore } from '../data/store'
-import { formatCurrency, formatDate, generateBillNumber } from '../data/helpers'
+import { formatCurrency, formatDate, generateBillNumber, getEffectiveDueDate, getDynamicBillStatus } from '../data/helpers'
 
 function BillPreview() {
   const { billId } = useParams()
@@ -575,7 +575,7 @@ function BillPreview() {
             </div>
             <div className="meta-cell">
               <div className="k">Due Date</div>
-              <div className="v due">{formatDate(bill.dueDate)}</div>
+              <div className="v due">{formatDate(getEffectiveDueDate(bill, settings.billDueDay || 10))}</div>
             </div>
           </div>
 
@@ -685,7 +685,7 @@ function BillPreview() {
                 
                 {totalPaid > 0 && <tr className="payment"><td>Payments Received</td><td>-{formatCurrency(totalPaid)}</td></tr>}
                 
-                {bill.status !== 'paid' && (
+                {getDynamicBillStatus(bill) !== 'paid' && (
                   <>
                     <tr className="overdue">
                       <td>Late Payment Charge (if after due date)</td>

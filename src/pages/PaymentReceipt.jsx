@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Printer, CheckCircle } from 'lucide-react'
 import { billStore, tenantStore, buildingStore, settingsStore, paymentStore } from '../data/store'
-import { formatCurrency, formatDate, generateBillNumber } from '../data/helpers'
+import { formatCurrency, formatDate, generateBillNumber, getEffectiveDueDate } from '../data/helpers'
 
 function PaymentReceipt() {
   const { paymentId } = useParams()
@@ -266,7 +266,7 @@ function PaymentReceipt() {
               <h4>Bill Reference</h4>
               <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>#{billNumber}</p>
               <p><strong>Period:</strong> {bill.month} {bill.year}</p>
-              <p><strong>Due Date:</strong> {formatDate(bill.dueDate)}</p>
+              <p><strong>Due Date:</strong> {formatDate(getEffectiveDueDate(bill))}</p>
               <p><strong>Bill Total:</strong> {formatCurrency(bill.totalAmount)}</p>
             </div>
             <div className="rc-info-box">
