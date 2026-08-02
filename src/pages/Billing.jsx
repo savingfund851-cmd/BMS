@@ -37,6 +37,20 @@ function calcWater(tenant, currentReading, prevReading) {
 const MONTHS = ['January','February','March','April','May','June',
                  'July','August','September','October','November','December']
 
+function calcDueDate(monthName, yearVal, dueDay = 10) {
+  const mIndex = MONTHS.indexOf(monthName)
+  const y = parseInt(yearVal, 10)
+  let nextMIndex = mIndex + 1
+  let nextYear = y
+  if (nextMIndex > 11) {
+    nextMIndex = 0
+    nextYear = y + 1
+  }
+  const mStr = String(nextMIndex + 1).padStart(2, '0')
+  const dStr = String(dueDay).padStart(2, '0')
+  return `${nextYear}-${mStr}-${dStr}`
+}
+
 function Billing() {
   const navigate = useNavigate()
   const [bills, setBills] = useState([])
@@ -59,7 +73,7 @@ function Billing() {
   const [genBase, setGenBase] = useState({
     buildingId: '', tenantId: 'all', month: currentMonth, year: currentYear,
     gas: '', serviceCharge: '', otherCharges: '', billType: 'both',
-    dueDate: `${currentYear}-${String(MONTHS.indexOf(currentMonth) + 1).padStart(2,'0')}-${String(billDueDay).padStart(2,'0')}`
+    dueDate: calcDueDate(currentMonth, currentYear, billDueDay)
   })
   // Per-tenant meter readings during generation
   const [meterInputs, setMeterInputs] = useState({})  // { [tenantId]: { elec: '', water: '' } }
@@ -527,9 +541,8 @@ function Billing() {
                     <select className="form-select" value={genBase.month}
                       onChange={e => {
                         const newMonth = e.target.value
-                        const monthNum = String(MONTHS.indexOf(newMonth) + 1).padStart(2,'0')
-                        const day = String(settingsStore.get()?.billDueDay || 10).padStart(2,'0')
-                        setGenBase({...genBase, month: newMonth, dueDate: `${genBase.year}-${monthNum}-${day}`})
+                        const day = settingsStore.get()?.billDueDay || 10
+                        setGenBase({...genBase, month: newMonth, dueDate: calcDueDate(newMonth, genBase.year, day)})
                       }}>
                       {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
@@ -540,9 +553,8 @@ function Billing() {
                       value={genBase.year}
                       onChange={e => {
                         const newYear = e.target.value
-                        const monthNum = String(MONTHS.indexOf(genBase.month) + 1).padStart(2,'0')
-                        const day = String(settingsStore.get()?.billDueDay || 10).padStart(2,'0')
-                        setGenBase({...genBase, year: newYear, dueDate: `${newYear}-${monthNum}-${day}`})
+                        const day = settingsStore.get()?.billDueDay || 10
+                        setGenBase({...genBase, year: newYear, dueDate: calcDueDate(genBase.month, newYear, day)})
                       }}
                       min="2024" max="2030"/>
                   </div>
