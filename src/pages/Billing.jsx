@@ -50,12 +50,16 @@ function Billing() {
   const [filterYear, setFilterYear] = useState(currentYear)
   const [currentUser, setCurrentUser] = useState(null)
 
+  // Load settings to get billDueDay
+  const cfg = settingsStore.get() || {}
+  const billDueDay = cfg.billDueDay || 10
+
   // Generate modal state
   const [genStep, setGenStep] = useState(1)  // step 1: select building/month  step 2: enter readings
   const [genBase, setGenBase] = useState({
     buildingId: '', tenantId: 'all', month: currentMonth, year: currentYear,
     gas: '', serviceCharge: '', otherCharges: '', billType: 'both',
-    dueDate: `${currentYear}-${String(MONTHS.indexOf(currentMonth) + 1).padStart(2,'0')}-10`
+    dueDate: `${currentYear}-${String(MONTHS.indexOf(currentMonth) + 1).padStart(2,'0')}-${String(billDueDay).padStart(2,'0')}`
   })
   // Per-tenant meter readings during generation
   const [meterInputs, setMeterInputs] = useState({})  // { [tenantId]: { elec: '', water: '' } }
@@ -521,7 +525,12 @@ function Billing() {
                   <div className="form-group">
                     <label className="form-label">Month *</label>
                     <select className="form-select" value={genBase.month}
-                      onChange={e => setGenBase({...genBase, month: e.target.value})}>
+                      onChange={e => {
+                        const newMonth = e.target.value
+                        const monthNum = String(MONTHS.indexOf(newMonth) + 1).padStart(2,'0')
+                        const day = String(settingsStore.get()?.billDueDay || 10).padStart(2,'0')
+                        setGenBase({...genBase, month: newMonth, dueDate: `${genBase.year}-${monthNum}-${day}`})
+                      }}>>
                       {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                   </div>
@@ -529,7 +538,12 @@ function Billing() {
                     <label className="form-label">Year *</label>
                     <input className="form-input" type="number"
                       value={genBase.year}
-                      onChange={e => setGenBase({...genBase, year: e.target.value})}
+                      onChange={e => {
+                        const newYear = e.target.value
+                        const monthNum = String(MONTHS.indexOf(genBase.month) + 1).padStart(2,'0')
+                        const day = String(settingsStore.get()?.billDueDay || 10).padStart(2,'0')
+                        setGenBase({...genBase, year: newYear, dueDate: `${newYear}-${monthNum}-${day}`})
+                      }}
                       min="2024" max="2030"/>
                   </div>
                 </div>
