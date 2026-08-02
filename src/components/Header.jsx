@@ -10,6 +10,10 @@ function Header({ user, onToggleSidebar }) {
   const [showSearch, setShowSearch] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState([])
+  const [readIds, setReadIds] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('tba_read_notifs') || '[]')) }
+    catch { return new Set() }
+  })
   const searchRef = useRef(null)
   const notifRef = useRef(null)
 
@@ -23,51 +27,65 @@ function Header({ user, onToggleSidebar }) {
     const fetchNotifs = async () => {
       const bills = await billStore.getAll()
       const tenants = await tenantStore.getAll()
-    const now = new Date()
-    const notifs = []
+      const now = new Date()
+      const notifs = []
 
-    bills.forEach(b => {
-      const tenant = tenants.find(t => t.id === b.tenantId)
-      if (!tenant) return
-      const due = new Date(b.dueDate)
+      bills.forEach(b => {
+        const tenant = tenants.find(t => t.id === b.tenantId)
+        if (!tenant) return
+        const due = new Date(b.dueDate)
 
-      if (b.status === 'overdue') {
-        notifs.push({
-          id: b.id,
-          type: 'overdue',
-          icon: 'overdue',
-          message: `${tenant.name} — Bill overdue (${b.month} ${b.year})`,
-          sub: `Due: ${b.dueDate}`,
-          link: `/bill-preview/${b.id}`
-        })
-      } else if (b.status === 'pending' && due <= now) {
-        notifs.push({
-          id: b.id,
-          type: 'due',
-          icon: 'due',
-          message: `${tenant.name} — Bill due today (${b.month} ${b.year})`,
-          sub: `Amount: ৳${Number(b.totalAmount).toLocaleString()}`,
-          link: `/bill-preview/${b.id}`
-        })
-      } else if (b.status === 'pending') {
-        const diffDays = Math.ceil((due - now) / (1000 * 60 * 60 * 24))
-        if (diffDays <= 3) {
+        if (b.status === 'overdue') {
           notifs.push({
             id: b.id,
-            type: 'upcoming',
-            icon: 'upcoming',
-            message: `${tenant.name} — Bill due in ${diffDays} day(s)`,
-            sub: `${b.month} ${b.year} • ৳${Number(b.totalAmount).toLocaleString()}`,
+            type: 'overdue',
+            icon: 'overdue',
+            message: `${tenant.name} — Bill overdue (${b.month} ${b.year})`,
+            sub: `Due: ${b.dueDate}`,
             link: `/bill-preview/${b.id}`
           })
+        } else if (b.status === 'pending' && due <= now) {
+          notifs.push({
+            id: b.id,
+            type: 'due',
+            icon: 'due',
+            message: `${tenant.name} — Bill due today (${b.month} ${b.year})`,
+            sub: `Amount: ৳${Number(b.totalAmount).toLocaleString()}`,
+            link: `/bill-preview/${b.id}`
+          })
+        } else if (b.status === 'pending') {
+          const diffDays = Math.ceil((due - now) / (1000 * 60 * 60 * 24))
+          if (diffDays <= 3) {
+            notifs.push({
+              id: b.id,
+              type: 'upcoming',
+              icon: 'upcoming',
+              message: `${tenant.name} — Bill due in ${diffDays} day(s)`,
+              sub: `${b.month} ${b.year} • ৳${Number(b.totalAmount).toLocaleString()}`,
+              link: `/bill-preview/${b.id}`
+            })
+          }
         }
-      }
-    })
+      })
 
       setNotifications(notifs.slice(0, 20))
     }
     fetchNotifs()
   }, [])
+
+  // Unread = notifications whose id is not in readIds
+  const unreadCount = notifications.filter(n => !readIds.has(n.id)).length
+
+  // When panel opens, mark all current notifications as read
+  const handleToggleNotifications = () => {
+    const next = !showNotifications
+    setShowNotifications(next)
+    if (next && unreadCount > 0) {
+      const newReadIds = new Set([...readIds, ...notifications.map(n => n.id)])
+      setReadIds(newReadIds)
+      try { localStorage.setItem('tba_read_notifs', JSON.stringify([...newReadIds])) } catch {}
+    }
+  }
 
   // Search logic
   useEffect(() => {
@@ -80,58 +98,55 @@ function Header({ user, onToggleSidebar }) {
       const q = searchQuery.toLowerCase()
       const results = []
 
-      // Search tenants
       const allTenants = await tenantStore.getAll()
       allTenants.forEach(t => {
-      if (
-        t.name?.toLowerCase().includes(q) ||
-        t.flat?.toLowerCase().includes(q) ||
-        t.phone?.includes(q) ||
-        t.email?.toLowerCase().includes(q)
-      ) {
-        results.push({
-          type: 'tenant',
-          id: t.id,
-          title: t.name,
-          sub: `Flat ${t.flat} • ${t.phone}`,
-          link: '/tenants'
-        })
-      }
-    })
+        if (
+          t.name?.toLowerCase().includes(q) ||
+          t.flat?.toLowerCase().includes(q) ||
+          t.phone?.includes(q) ||
+          t.email?.toLowerCase().includes(q)
+        ) {
+          results.push({
+            type: 'tenant',
+            id: t.id,
+            title: t.name,
+            sub: `Flat ${t.flat} • ${t.phone}`,
+            link: '/tenants'
+          })
+        }
+      })
 
-    // Search buildings
-    const allBuildings = await buildingStore.getAll()
-    allBuildings.forEach(b => {
-      if (b.name?.toLowerCase().includes(q) || b.address?.toLowerCase().includes(q)) {
-        results.push({
-          type: 'building',
-          id: b.id,
-          title: b.name,
-          sub: b.address,
-          link: '/buildings'
-        })
-      }
-    })
+      const allBuildings = await buildingStore.getAll()
+      allBuildings.forEach(b => {
+        if (b.name?.toLowerCase().includes(q) || b.address?.toLowerCase().includes(q)) {
+          results.push({
+            type: 'building',
+            id: b.id,
+            title: b.name,
+            sub: b.address,
+            link: '/buildings'
+          })
+        }
+      })
 
-    // Search bills by tenant name
-    const allBills = await billStore.getAll()
-    allBills.forEach(b => {
-      const tenant = allTenants.find(t => t.id === b.tenantId)
-      if (!tenant) return
-      if (
-        tenant.name?.toLowerCase().includes(q) ||
-        b.month?.toLowerCase().includes(q) ||
-        String(b.year).includes(q)
-      ) {
-        results.push({
-          type: 'bill',
-          id: b.id,
-          title: `Bill — ${tenant.name}`,
-          sub: `${b.month} ${b.year} • ৳${Number(b.totalAmount).toLocaleString()} • ${b.status}`,
-          link: `/bill-preview/${b.id}`
-        })
-      }
-    })
+      const allBills = await billStore.getAll()
+      allBills.forEach(b => {
+        const tenant = allTenants.find(t => t.id === b.tenantId)
+        if (!tenant) return
+        if (
+          tenant.name?.toLowerCase().includes(q) ||
+          b.month?.toLowerCase().includes(q) ||
+          String(b.year).includes(q)
+        ) {
+          results.push({
+            type: 'bill',
+            id: b.id,
+            title: `Bill — ${tenant.name}`,
+            sub: `${b.month} ${b.year} • ৳${Number(b.totalAmount).toLocaleString()} • ${b.status}`,
+            link: `/bill-preview/${b.id}`
+          })
+        }
+      })
 
       setSearchResults(results.slice(0, 8))
       setShowSearch(results.length > 0)
@@ -225,10 +240,10 @@ function Header({ user, onToggleSidebar }) {
 
         {/* Notifications */}
         <div className="notif-wrap" ref={notifRef}>
-          <button className="notification-btn" onClick={() => setShowNotifications(!showNotifications)}>
+          <button className="notification-btn" onClick={handleToggleNotifications}>
             <Bell size={20} />
-            {notifications.length > 0 && (
-              <span className="notification-badge">{notifications.length > 9 ? '9+' : notifications.length}</span>
+            {unreadCount > 0 && (
+              <span className="notification-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
             )}
           </button>
 
