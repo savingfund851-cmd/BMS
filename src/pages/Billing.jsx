@@ -245,9 +245,10 @@ function Billing() {
     const inputs = {}
     targetTenants.forEach(t => {
       // Find previous reading or use startUnit
-      const prevReading = meterReadingStore.getPreviousReading(t.id, genBase.month, Number(genBase.year))
-      const prevElec = prevReading?.electricityCurrentReading ?? t.electricityStartUnit ?? 0
-      const prevWater = prevReading?.waterCurrentReading ?? t.waterStartUnit ?? 0
+      const prevElecObj = meterReadingStore.getPreviousElectricityReading(t.id, genBase.month, Number(genBase.year))
+      const prevWaterObj = meterReadingStore.getPreviousWaterReading(t.id, genBase.month, Number(genBase.year))
+      const prevElec = prevElecObj?.electricityCurrentReading ?? t.electricityStartUnit ?? 0
+      const prevWater = prevWaterObj?.waterCurrentReading ?? t.waterStartUnit ?? 0
       inputs[t.id] = { elec: '', water: '', prevElec, prevWater }
     })
     setMeterInputs(inputs)
@@ -301,8 +302,8 @@ function Billing() {
       const includeElec = billType !== 'water'
       const includeWater = billType !== 'electricity'
 
-      const elecCurrent = includeElec ? (parseFloat(inp.elec) >= 0 ? parseFloat(inp.elec) : 0) : 0
-      const waterCurrent = includeWater ? (parseFloat(inp.water) >= 0 ? parseFloat(inp.water) : 0) : 0
+      const elecCurrent = includeElec ? (parseFloat(inp.elec) >= 0 ? parseFloat(inp.elec) : 0) : null
+      const waterCurrent = includeWater ? (parseFloat(inp.water) >= 0 ? parseFloat(inp.water) : 0) : null
       const prevElec = parseFloat(inp.prevElec ?? tenant.electricityStartUnit ?? 0)
       const prevWater = parseFloat(inp.prevWater ?? tenant.waterStartUnit ?? 0)
       const elecCalc = includeElec
@@ -357,11 +358,11 @@ function Billing() {
         month: genBase.month,
         year: Number(genBase.year),
         electricityCurrentReading: elecCurrent,
-        electricityPreviousReading: prevElec,
-        electricityUnits: elecCalc.units,
+        electricityPreviousReading: includeElec ? prevElec : null,
+        electricityUnits: includeElec ? elecCalc.units : null,
         waterCurrentReading: waterCurrent,
-        waterPreviousReading: prevWater,
-        waterUnits: waterCalc.units
+        waterPreviousReading: includeWater ? prevWater : null,
+        waterUnits: includeWater ? waterCalc.units : null
       })
     })
 
