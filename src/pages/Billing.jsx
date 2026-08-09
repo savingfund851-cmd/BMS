@@ -290,7 +290,7 @@ function Billing() {
 
     const promises = targetTenants.map(async tenant => {
       // Check Supabase directly — safe for multi-PC use
-      const alreadyExists = await billStore.checkExists(tenant.id, genBase.month, Number(genBase.year))
+      const alreadyExists = await billStore.checkExists(tenant.id, genBase.month, Number(genBase.year), genBase.billType)
       if (alreadyExists) {
         skippedCount++
         return

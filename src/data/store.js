@@ -244,16 +244,26 @@ export const paymentStore = createStore('payments');
 export const billStore = {
   ...createStore('bills'),
   // Queries Supabase directly to check if a bill exists — bypasses local cache
-  checkExists: async (tenantId, month, year) => {
-    const { data, error } = await supabase
+  checkExists: async (tenantId, month, year, billType) => {
+    let query = supabase
       .from('bills')
-      .select('id')
+      .select('id, bill_type')
       .eq('tenant_id', tenantId)
       .eq('month', month)
-      .eq('year', year)
-      .maybeSingle();
-    if (error) return false;
-    return !!data;
+      .eq('year', year);
+
+    const { data, error } = await query;
+    if (error || !data || data.length === 0) return false;
+
+    // If billType is specific (electricity or water), only block if same type exists
+    if (billType === 'electricity') {
+      return data.some(b => b.bill_type === 'electricity' || b.bill_type === 'both');
+    }
+    if (billType === 'water') {
+      return data.some(b => b.bill_type === 'water' || b.bill_type === 'both');
+    }
+    // For 'both', block if any bill already exists
+    return data.length > 0;
   }
 };
 
