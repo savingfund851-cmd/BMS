@@ -281,7 +281,7 @@ function Settings() {
                   <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block' }}>Default: 5%</span>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Washa (Water) VAT (%)</label>
+                  <label className="form-label">Water & Sewerage VAT (%)</label>
                   <input className="form-input" type="number" min="0" max="100" step="0.5"
                     value={settings.waterVatRate !== undefined ? settings.waterVatRate : 15}
                     onChange={e => setSettings({...settings, waterVatRate: parseFloat(e.target.value) || 0})} />
@@ -295,7 +295,7 @@ function Settings() {
                 {[
                   { id: 'rent', label: 'House Rent', desc: 'Show monthly house rent' },
                   { id: 'electricity', label: 'Electricity Bill', desc: 'Show electricity meter reading & charge' },
-                  { id: 'water', label: 'Water (Washa)', desc: 'Show water reading & charge' },
+                  { id: 'water', label: 'Water & Sewerage Bill', desc: 'Show water & sewerage reading & charge' },
                   { id: 'gas', label: 'Gas Bill', desc: 'Show fixed gas bill' },
                   { id: 'serviceCharge', label: 'Service Charge', desc: 'Show monthly service charge' },
                   { id: 'otherCharges', label: 'Other Charges', desc: 'Show any additional/other charges' }

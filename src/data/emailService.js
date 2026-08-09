@@ -16,7 +16,7 @@ function generateBillEmailBody(tenant, bill, building, settings) {
 
   if (bill.rent) items.push(`<tr><td style="padding:8px 12px;border-bottom:1px solid #eee">Rent</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">৳${Number(bill.rent).toLocaleString()}</td></tr>`)
   if (bill.electricity) items.push(`<tr><td style="padding:8px 12px;border-bottom:1px solid #eee">Electricity</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">৳${Number(bill.electricity).toLocaleString()}</td></tr>`)
-  if (bill.water) items.push(`<tr><td style="padding:8px 12px;border-bottom:1px solid #eee">Water</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">৳${Number(bill.water).toLocaleString()}</td></tr>`)
+  if (bill.water) items.push(`<tr><td style="padding:8px 12px;border-bottom:1px solid #eee">Water & Sewerage Bill</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">৳${Number(bill.water).toLocaleString()}</td></tr>`)
   if (bill.gas) items.push(`<tr><td style="padding:8px 12px;border-bottom:1px solid #eee">Gas</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">৳${Number(bill.gas).toLocaleString()}</td></tr>`)
   if (bill.serviceCharge) items.push(`<tr><td style="padding:8px 12px;border-bottom:1px solid #eee">Service Charge</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">৳${Number(bill.serviceCharge).toLocaleString()}</td></tr>`)
   if (bill.otherCharges) items.push(`<tr><td style="padding:8px 12px;border-bottom:1px solid #eee">Other Charges</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">৳${Number(bill.otherCharges).toLocaleString()}</td></tr>`)

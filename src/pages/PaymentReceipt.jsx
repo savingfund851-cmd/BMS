@@ -316,7 +316,7 @@ function PaymentReceipt() {
               <tbody>
                 {bill.rent > 0 && <tr><td>Rent</td><td>{formatCurrency(bill.rent)}</td></tr>}
                 {bill.electricity > 0 && <tr><td>Electricity</td><td>{formatCurrency(bill.electricity)}</td></tr>}
-                {bill.water > 0 && <tr><td>Water</td><td>{formatCurrency(bill.water)}</td></tr>}
+                {bill.water > 0 && <tr><td>Water & Sewerage Bill</td><td>{formatCurrency(bill.water)}</td></tr>}
                 {bill.gas > 0 && <tr><td>Gas</td><td>{formatCurrency(bill.gas)}</td></tr>}
                 {bill.serviceCharge > 0 && <tr><td>Service Charge</td><td>{formatCurrency(bill.serviceCharge)}</td></tr>}
                 {bill.otherCharges > 0 && <tr><td>Other Charges</td><td>{formatCurrency(bill.otherCharges)}</td></tr>}

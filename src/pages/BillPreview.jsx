@@ -200,7 +200,7 @@ function BillPreview() {
   // Bill title logic
   const getBillTitle = () => {
     if (showElectricity && !showWater && !showRent) return 'ELECTRICITY BILL'
-    if (showWater && !showElectricity && !showRent) return 'WATER BILL'
+    if (showWater && !showElectricity && !showRent) return 'WATER & SEWERAGE BILL'
     return 'COMBINED BILL'
   }
 
@@ -603,7 +603,7 @@ function BillPreview() {
             )}
             {showWater && (
               <div>
-                <div className="k">Water Meter No.</div>
+                <div className="k">W&S Meter No.</div>
                 <div className="v">{tenant.waterMeterNo || `WM-${tenant.flat}`}</div>
               </div>
             )}
@@ -686,7 +686,7 @@ function BillPreview() {
                   <>
                     <tr className="subtotal"><td>Subtotal</td><td>{formatCurrency(subTotal)}</td></tr>
                     <tr>
-                      <td>VAT {bill.electricityVat > 0 ? `(Electricity ${elecVatRate}%) ` : ''}{bill.waterVat > 0 ? `(Water ${waterVatRate}%)` : ''}</td>
+                      <td>VAT {bill.electricityVat > 0 ? `(Electricity ${elecVatRate}%) ` : ''}{bill.waterVat > 0 ? `(W&S ${waterVatRate}%)` : ''}</td>
                       <td>{formatCurrency(totalVat)}</td>
                     </tr>
                   </>
@@ -813,9 +813,9 @@ function BillPreview() {
                 <div className="form-group">
                   <label className="form-label">Bill Type</label>
                   <select className="form-select" value={editForm.billType} onChange={e => setEditForm({...editForm, billType: e.target.value})}>
-                    <option value="both">Electricity + Washa</option>
+                    <option value="both">Electricity + Water & Sewerage</option>
                     <option value="electricity">Electricity Only</option>
-                    <option value="water">Washa Only</option>
+                    <option value="water">Water & Sewerage Only</option>
                   </select>
                 </div>
                 <div className="form-group">
@@ -843,7 +843,7 @@ function BillPreview() {
                 {editForm.billType !== 'electricity' && (
                   bill.waterPreviousReading != null ? (
                     <div className="form-group">
-                      <label className="form-label">Water Current Reading</label>
+                      <label className="form-label">Water & Sewerage Current Reading</label>
                       <input type="number" className="form-input" value={editForm.waterCurrentReading} onChange={e => setEditForm({...editForm, waterCurrentReading: e.target.value})} min="0" step="0.01" />
                       <small style={{ color: 'var(--text-muted)' }}>
                         Prev: {bill.waterPreviousReading} • Used: {waterCalc?.units || 0} unit • Auto Total: ৳{displayWater.toLocaleString()}
@@ -851,7 +851,7 @@ function BillPreview() {
                     </div>
                   ) : (
                     <div className="form-group">
-                      <label className="form-label">Water Total</label>
+                      <label className="form-label">Water & Sewerage Total</label>
                       <input type="number" className="form-input" value={editForm.water} onChange={e => setEditForm({...editForm, water: e.target.value})} min="0" step="0.01" />
                       <small style={{ color: 'var(--text-muted)' }}>Includes Usage & VAT</small>
                     </div>

@@ -565,9 +565,9 @@ function Billing() {
                   <label className="form-label">Bill Type *</label>
                   <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
                     {[
-                      { value: 'both', label: '⚡ Electricity + 💧 Washa' },
+                      { value: 'both', label: '⚡ Electricity + 💧 Water & Sewerage' },
                       { value: 'electricity', label: '⚡ Electricity Only' },
-                      { value: 'water', label: '💧 Washa Only' },
+                      { value: 'water', label: '💧 Water & Sewerage Only' },
                     ].map(opt => (
                       <button
                         key={opt.value}
@@ -705,11 +705,11 @@ function Billing() {
                           </div>
                           )}
 
-                          {/* ── Water/Washa ── */}
+                          {/* ── Water & Sewerage ── */}
                           {genBase.billType !== 'electricity' && (
                           <div className="meter-section water-section">
                             <div className="meter-section-title">
-                              <Droplets size={14}/> Washa (Water)
+                              <Droplets size={14}/> Water & Sewerage
                             </div>
                             <div className="meter-rate-info">
                               Rate: ৳{tenant.waterRate}/unit &nbsp;|&nbsp; <span style={{color:'var(--color-amber)'}}>VAT: {settingsStore.get()?.waterVatRate ?? 15}%</span>
@@ -772,15 +772,15 @@ function Billing() {
                                   {genBase.billType !== 'electricity' && (
                                     <>
                                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                        <span style={{ color: 'var(--color-text-secondary)' }}>Water Units:</span>
+                                        <span style={{ color: 'var(--color-text-secondary)' }}>Water & Sewerage Units:</span>
                                         <span>{prev.waterCalc.units}</span>
                                       </div>
                                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                        <span style={{ color: 'var(--color-text-secondary)' }}>Water Unit Cost (Rate):</span>
+                                        <span style={{ color: 'var(--color-text-secondary)' }}>Water & Sewerage Unit Cost (Rate):</span>
                                         <span>৳{tenant.waterRate}/unit</span>
                                       </div>
                                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                        <span style={{ color: 'var(--color-text-secondary)' }}>Water Prev &rarr; Curr:</span>
+                                        <span style={{ color: 'var(--color-text-secondary)' }}>W&S Prev &rarr; Curr:</span>
                                         <span>{inp.prevWater ?? tenant.waterStartUnit} &rarr; {inp.water || 0}</span>
                                       </div>
                                     </>
@@ -813,11 +813,11 @@ function Billing() {
                                   {genBase.billType !== 'electricity' && (
                                     <>
                                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                        <span style={{ color: 'var(--color-text-secondary)' }}>Water Charge:</span>
+                                        <span style={{ color: 'var(--color-text-secondary)' }}>Water & Sewerage Charge:</span>
                                         <span>{formatCurrency(prev.waterCalc.subTotal)}</span>
                                       </div>
                                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                        <span style={{ color: 'var(--color-text-secondary)' }}>Water VAT ({prev.waterCalc.vatRate}%):</span>
+                                        <span style={{ color: 'var(--color-text-secondary)' }}>W&S VAT ({prev.waterCalc.vatRate}%):</span>
                                         <span>{formatCurrency(prev.waterCalc.vat)}</span>
                                       </div>
                                     </>
