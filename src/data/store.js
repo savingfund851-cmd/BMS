@@ -270,7 +270,7 @@ export const billStore = {
 export const meterReadingStore = {
   ...createStore('meter_readings'),
   getPreviousElectricityReading: (tenantId, currentMonth, currentYear) => {
-    const readings = (cache.meter_readings || []).filter(r => r.tenantId === tenantId && r.electricityCurrentReading != null && !(r.electricityCurrentReading === 0 && r.electricityUnits === 0));
+    const readings = (cache.meter_readings || []).filter(r => r.tenantId === tenantId && r.electricityCurrentReading != null && r.electricityCurrentReading > 0);
     const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     readings.sort((a, b) => {
       if (a.year !== b.year) return b.year - a.year;
@@ -282,7 +282,7 @@ export const meterReadingStore = {
     ) || null;
   },
   getPreviousWaterReading: (tenantId, currentMonth, currentYear) => {
-    const readings = (cache.meter_readings || []).filter(r => r.tenantId === tenantId && r.waterCurrentReading != null && !(r.waterCurrentReading === 0 && r.waterUnits === 0));
+    const readings = (cache.meter_readings || []).filter(r => r.tenantId === tenantId && r.waterCurrentReading != null && r.waterCurrentReading > 0);
     const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     readings.sort((a, b) => {
       if (a.year !== b.year) return b.year - a.year;
