@@ -269,9 +269,19 @@ export const billStore = {
 
 export const meterReadingStore = {
   ...createStore('meter_readings'),
-  getPreviousElectricityReading: (tenantId, currentMonth, currentYear) => {
-    const readings = (cache.meter_readings || []).filter(r => r.tenantId === tenantId && r.electricityCurrentReading != null && r.electricityCurrentReading > 0);
+  getPreviousElectricityReading: (tenantId, currentMonth, currentYear, startDate) => {
     const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const readings = (cache.meter_readings || []).filter(r => {
+      if (r.tenantId !== tenantId) return false;
+      if (r.electricityCurrentReading == null || r.electricityCurrentReading <= 0) return false;
+      // If meter was reset/changed (startDate set), ignore readings from before that date
+      if (startDate) {
+        const sd = new Date(startDate);
+        const rMonth = MONTHS.indexOf(r.month);
+        if (r.year < sd.getFullYear() || (r.year === sd.getFullYear() && rMonth < sd.getMonth())) return false;
+      }
+      return true;
+    });
     readings.sort((a, b) => {
       if (a.year !== b.year) return b.year - a.year;
       return MONTHS.indexOf(b.month) - MONTHS.indexOf(a.month);
@@ -281,9 +291,19 @@ export const meterReadingStore = {
       r.year < currentYear || (r.year === currentYear && MONTHS.indexOf(r.month) < currIdx)
     ) || null;
   },
-  getPreviousWaterReading: (tenantId, currentMonth, currentYear) => {
-    const readings = (cache.meter_readings || []).filter(r => r.tenantId === tenantId && r.waterCurrentReading != null && r.waterCurrentReading > 0);
+  getPreviousWaterReading: (tenantId, currentMonth, currentYear, startDate) => {
     const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const readings = (cache.meter_readings || []).filter(r => {
+      if (r.tenantId !== tenantId) return false;
+      if (r.waterCurrentReading == null || r.waterCurrentReading <= 0) return false;
+      // If meter was reset/changed (startDate set), ignore readings from before that date
+      if (startDate) {
+        const sd = new Date(startDate);
+        const rMonth = MONTHS.indexOf(r.month);
+        if (r.year < sd.getFullYear() || (r.year === sd.getFullYear() && rMonth < sd.getMonth())) return false;
+      }
+      return true;
+    });
     readings.sort((a, b) => {
       if (a.year !== b.year) return b.year - a.year;
       return MONTHS.indexOf(b.month) - MONTHS.indexOf(a.month);

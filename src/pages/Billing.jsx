@@ -245,8 +245,8 @@ function Billing() {
     const inputs = {}
     targetTenants.forEach(t => {
       // Find previous reading or use startUnit
-      const prevElecObj = meterReadingStore.getPreviousElectricityReading(t.id, genBase.month, Number(genBase.year))
-      const prevWaterObj = meterReadingStore.getPreviousWaterReading(t.id, genBase.month, Number(genBase.year))
+      const prevElecObj = meterReadingStore.getPreviousElectricityReading(t.id, genBase.month, Number(genBase.year), t.electricityStartDate)
+      const prevWaterObj = meterReadingStore.getPreviousWaterReading(t.id, genBase.month, Number(genBase.year), t.waterStartDate)
       const prevElec = prevElecObj?.electricityCurrentReading ?? t.electricityStartUnit ?? 0
       const prevWater = prevWaterObj?.waterCurrentReading ?? t.waterStartUnit ?? 0
       inputs[t.id] = { elec: '', water: '', prevElec, prevWater }
