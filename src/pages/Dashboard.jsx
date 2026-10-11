@@ -113,8 +113,13 @@ function Dashboard() {
     })
     setBuildingStats(bStats)
 
-    // Recent bills (sorted by date)
-    const sortedBills = [...bills].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5)
+    // Recent bills (sorted by creation date, fallback to bill month/year)
+    const sortedBills = [...allBills].sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+      return timeB - timeA
+    }).slice(0, 5)
+
     const enrichedBills = sortedBills.map(bill => {
       const tenant = tenants.find(t => t.id === bill.tenantId)
       const building = buildings.find(b => b.id === bill.buildingId)
@@ -122,11 +127,16 @@ function Dashboard() {
     })
     setRecentBills(enrichedBills)
 
-    // Recent payments
-    const sortedPayments = [...payments].sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate)).slice(0, 5)
+    // Recent payments (sorted by payment date)
+    const sortedPayments = [...allPayments].sort((a, b) => {
+      const timeA = a.paymentDate ? new Date(a.paymentDate).getTime() : 0
+      const timeB = b.paymentDate ? new Date(b.paymentDate).getTime() : 0
+      return timeB - timeA
+    }).slice(0, 5)
+
     const enrichedPayments = sortedPayments.map(payment => {
       const tenant = tenants.find(t => t.id === payment.tenantId)
-      const bill = bills.find(b => b.id === payment.billId)
+      const bill = allBills.find(b => b.id === payment.billId)
       const building = bill ? buildings.find(b => b.id === bill.buildingId) : null
       return { 
         ...payment, 
