@@ -220,19 +220,30 @@ function Login({ onLogin }) {
         </svg>
       </div>
 
+      {/* Floating Animated BMS Logos in background */}
+      <div className="bms-floating-logos-container" aria-hidden="true">
+        <div className="bms-floating-logo bms-float-1">
+          <img src="/bms-logo-animated.svg" alt="BMS Animated" />
+        </div>
+        <div className="bms-floating-logo bms-float-2">
+          <img src="/bms-logo-animated.svg" alt="BMS Animated" />
+        </div>
+        <div className="bms-floating-logo bms-float-3">
+          <img src="/bms-logo-animated.svg" alt="BMS Animated" />
+        </div>
+        <div className="bms-floating-logo bms-float-4">
+          <img src="/bms-logo-animated.svg" alt="BMS Animated" />
+        </div>
+      </div>
+
       <div className="login-card-wrap">
         <div className="login-card">
           <div className="hub-icon">
-            <div className="ring">
+            <div className="ring bms-ring-glow">
               {settings.logoUrl ? (
-                <img src={settings.logoUrl} alt="Logo" style={{ width: 34, height: 34, objectFit: 'contain', borderRadius: '4px', zIndex: 2, position: 'relative' }} />
+                <img src={settings.logoUrl} alt="Logo" style={{ width: 38, height: 38, objectFit: 'contain', borderRadius: '4px', zIndex: 2, position: 'relative' }} />
               ) : (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ zIndex: 2, position: 'relative' }}>
-                  <circle cx="12" cy="12" r="2.5"/><circle cx="4" cy="5" r="1.8"/>
-                  <circle cx="20" cy="5" r="1.8"/><circle cx="4" cy="19" r="1.8"/>
-                  <circle cx="20" cy="19" r="1.8"/>
-                  <path d="M6 6.3 10.2 10.5M13.8 10.5 18 6.3M6 17.7l4.2-4.2M13.8 13.5 18 17.7"/>
-                </svg>
+                <img src="/bms-logo-animated.svg" alt="BMS Logo" style={{ width: 44, height: 44, objectFit: 'contain', zIndex: 2, position: 'relative' }} />
               )}
             </div>
           </div>
