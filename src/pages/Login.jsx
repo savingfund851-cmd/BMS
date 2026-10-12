@@ -150,14 +150,29 @@ function Login({ onLogin }) {
     }
     starsWrap.appendChild(frag)
 
-    // Parallax
+    // Parallax & Interactive Logo response with mouse pointer
+    const logoLayer = document.querySelector('.bms-floating-logos-container')
+    let ticking = false
+
     const handleMouseMove = (e) => {
-      const relX = (e.clientX / window.innerWidth - 0.5)
-      const relY = (e.clientY / window.innerHeight - 0.5)
-      backG.setAttribute('transform', `translate(${relX*10} ${relY*5})`)
-      frontG.setAttribute('transform', `translate(${relX*20} ${relY*8})`)
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const relX = (e.clientX / window.innerWidth - 0.5)
+          const relY = (e.clientY / window.innerHeight - 0.5)
+          backG.setAttribute('transform', `translate(${relX*10} ${relY*5})`)
+          frontG.setAttribute('transform', `translate(${relX*20} ${relY*8})`)
+
+          if (logoLayer) {
+            logoLayer.style.setProperty('--mouse-offset-x', `${relX * 45}px`)
+            logoLayer.style.setProperty('--mouse-offset-y', `${relY * 35}px`)
+            logoLayer.style.setProperty('--mouse-tilt', `${relX * 12}deg`)
+          }
+          ticking = false
+        })
+        ticking = true
+      }
     }
-    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mousemove', handleMouseMove, { passive: true })
     return () => window.removeEventListener('mousemove', handleMouseMove)
   }, [])
 
@@ -192,8 +207,8 @@ function Login({ onLogin }) {
     <div className="login-app">
       <div className="ticker">
         <div className="ticker-track">
-          {[...Array(2)].map((_, i) => (
-            <div key={i} style={{ display: 'flex', gap: '48px', paddingRight: '48px' }}>
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="ticker-block">
               <span>🏢 <b>{stats.bCount}</b> buildings connected</span>
               <span>⚡ {settings.loginTickerText || 'Live meter sync active'}</span>
               <span>📄 <b>{stats.bGen}</b> bills generated</span>

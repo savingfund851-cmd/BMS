@@ -2190,12 +2190,27 @@
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  contain: paint;
 }
 .login-app .ticker-track {
   display: flex;
+  width: max-content;
   white-space: nowrap;
-  animation: tickerScroll 22s linear infinite;
-  padding-left: 100%;
+  animation: tickerScrollSmooth 28s linear infinite;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.login-app .ticker-track:hover {
+  animation-play-state: paused;
+}
+.login-app .ticker-block {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  padding-right: 48px;
+  flex-shrink: 0;
 }
 .login-app .ticker span {
   font-size: 12px;
@@ -2206,9 +2221,9 @@
   color: var(--color-text-primary);
   font-weight: 600;
 }
-@keyframes tickerScroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-100%); }
+@keyframes tickerScrollSmooth {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
 }
 
 /* ---- stars ---- */
@@ -2528,13 +2543,28 @@
   pointer-events: none;
   z-index: 2;
   overflow: hidden;
+  --mouse-offset-x: 0px;
+  --mouse-offset-y: 0px;
+  --mouse-tilt: 0deg;
 }
 
 .bms-floating-logo {
   position: absolute;
   filter: drop-shadow(0 0 16px rgba(59, 130, 246, 0.45)) drop-shadow(0 0 35px rgba(16, 185, 129, 0.3));
-  transition: opacity 0.5s ease;
+  transition: opacity 0.5s ease, filter 0.3s ease;
   user-select: none;
+  pointer-events: auto;
+  cursor: grab;
+  will-change: transform;
+}
+
+.bms-floating-logo:hover {
+  filter: drop-shadow(0 0 24px rgba(59, 130, 246, 0.8)) drop-shadow(0 0 45px rgba(16, 185, 129, 0.6));
+  z-index: 5;
+}
+
+.bms-floating-logo:active {
+  cursor: grabbing;
 }
 
 .bms-floating-logo img {
@@ -2542,6 +2572,11 @@
   height: 100%;
   display: block;
   object-fit: contain;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+
+.bms-floating-logo:hover img {
+  transform: scale(1.15) rotate(5deg);
 }
 
 /* Logo 1: Large majestic roaming on upper-left to middle */
@@ -2603,70 +2638,70 @@
   }
 }
 
-/* Roaming Animations with Natural Curved Paths & Gentle Tilts */
+/* Roaming Animations with Natural Curved Paths & Interactive Cursor Drift */
 @keyframes bmsRoam1 {
   0% {
-    transform: translate(0, 0) rotate(0deg) scale(1);
+    transform: translate3d(calc(0px + var(--mouse-offset-x) * 1.2), calc(0px + var(--mouse-offset-y) * 1.2), 0) rotate(calc(0deg + var(--mouse-tilt))) scale(1);
   }
   25% {
-    transform: translate(70px, -35px) rotate(4deg) scale(1.05);
+    transform: translate3d(calc(70px + var(--mouse-offset-x) * 1.2), calc(-35px + var(--mouse-offset-y) * 1.2), 0) rotate(calc(4deg + var(--mouse-tilt))) scale(1.05);
   }
   50% {
-    transform: translate(140px, 30px) rotate(-3deg) scale(0.98);
+    transform: translate3d(calc(140px + var(--mouse-offset-x) * 1.2), calc(30px + var(--mouse-offset-y) * 1.2), 0) rotate(calc(-3deg + var(--mouse-tilt))) scale(0.98);
   }
   75% {
-    transform: translate(60px, 70px) rotate(5deg) scale(1.02);
+    transform: translate3d(calc(60px + var(--mouse-offset-x) * 1.2), calc(70px + var(--mouse-offset-y) * 1.2), 0) rotate(calc(5deg + var(--mouse-tilt))) scale(1.02);
   }
   100% {
-    transform: translate(-30px, 40px) rotate(-2deg) scale(1);
+    transform: translate3d(calc(-30px + var(--mouse-offset-x) * 1.2), calc(40px + var(--mouse-offset-y) * 1.2), 0) rotate(calc(-2deg + var(--mouse-tilt))) scale(1);
   }
 }
 
 @keyframes bmsRoam2 {
   0% {
-    transform: translate(0, 0) rotate(0deg) scale(1);
+    transform: translate3d(calc(0px - var(--mouse-offset-x) * 0.9), calc(0px - var(--mouse-offset-y) * 0.9), 0) rotate(calc(0deg - var(--mouse-tilt))) scale(1);
   }
   20% {
-    transform: translate(-50px, -40px) rotate(-5deg) scale(1.06);
+    transform: translate3d(calc(-50px - var(--mouse-offset-x) * 0.9), calc(-40px - var(--mouse-offset-y) * 0.9), 0) rotate(calc(-5deg - var(--mouse-tilt))) scale(1.06);
   }
   50% {
-    transform: translate(60px, -70px) rotate(3deg) scale(0.95);
+    transform: translate3d(calc(60px - var(--mouse-offset-x) * 0.9), calc(-70px - var(--mouse-offset-y) * 0.9), 0) rotate(calc(3deg - var(--mouse-tilt))) scale(0.95);
   }
   80% {
-    transform: translate(110px, -20px) rotate(-4deg) scale(1.03);
+    transform: translate3d(calc(110px - var(--mouse-offset-x) * 0.9), calc(-20px - var(--mouse-offset-y) * 0.9), 0) rotate(calc(-4deg - var(--mouse-tilt))) scale(1.03);
   }
   100% {
-    transform: translate(20px, 30px) rotate(2deg) scale(1);
+    transform: translate3d(calc(20px - var(--mouse-offset-x) * 0.9), calc(30px - var(--mouse-offset-y) * 0.9), 0) rotate(calc(2deg - var(--mouse-tilt))) scale(1);
   }
 }
 
 @keyframes bmsRoam3 {
   0% {
-    transform: translate(0, 0) rotate(0deg);
+    transform: translate3d(calc(0px + var(--mouse-offset-x) * 1.5), calc(0px + var(--mouse-offset-y) * 1.5), 0) rotate(calc(0deg + var(--mouse-tilt) * 1.2));
   }
   33% {
-    transform: translate(-45px, 50px) rotate(6deg) scale(1.1);
+    transform: translate3d(calc(-45px + var(--mouse-offset-x) * 1.5), calc(50px + var(--mouse-offset-y) * 1.5), 0) rotate(calc(6deg + var(--mouse-tilt) * 1.2)) scale(1.1);
   }
   66% {
-    transform: translate(35px, -30px) rotate(-5deg) scale(0.92);
+    transform: translate3d(calc(35px + var(--mouse-offset-x) * 1.5), calc(-30px + var(--mouse-offset-y) * 1.5), 0) rotate(calc(-5deg + var(--mouse-tilt) * 1.2)) scale(0.92);
   }
   100% {
-    transform: translate(-20px, -50px) rotate(3deg) scale(1);
+    transform: translate3d(calc(-20px + var(--mouse-offset-x) * 1.5), calc(-50px + var(--mouse-offset-y) * 1.5), 0) rotate(calc(3deg + var(--mouse-tilt) * 1.2));
   }
 }
 
 @keyframes bmsRoam4 {
   0% {
-    transform: translate(0, 0) rotate(0deg);
+    transform: translate3d(calc(0px - var(--mouse-offset-x) * 0.7), calc(0px - var(--mouse-offset-y) * 0.7), 0) rotate(calc(0deg - var(--mouse-tilt)));
   }
   30% {
-    transform: translate(60px, -50px) rotate(-4deg) scale(1.05);
+    transform: translate3d(calc(60px - var(--mouse-offset-x) * 0.7), calc(-50px - var(--mouse-offset-y) * 0.7), 0) rotate(calc(-4deg - var(--mouse-tilt))) scale(1.05);
   }
   70% {
-    transform: translate(120px, -20px) rotate(5deg) scale(0.95);
+    transform: translate3d(calc(120px - var(--mouse-offset-x) * 0.7), calc(-20px - var(--mouse-offset-y) * 0.7), 0) rotate(calc(5deg - var(--mouse-tilt))) scale(0.95);
   }
   100% {
-    transform: translate(40px, 20px) rotate(-2deg) scale(1);
+    transform: translate3d(calc(40px - var(--mouse-offset-x) * 0.7), calc(20px - var(--mouse-offset-y) * 0.7), 0) rotate(calc(-2deg - var(--mouse-tilt)));
   }
 }
 
