@@ -17,6 +17,7 @@ function Login({ onLogin }) {
   
   const svgRef = useRef(null)
   const starsRef = useRef(null)
+  const logosRef = useRef(null)
 
   useEffect(() => {
     const s = settingsStore.get() || {}
@@ -151,22 +152,33 @@ function Login({ onLogin }) {
     starsWrap.appendChild(frag)
 
     // Parallax & Interactive Logo response with mouse pointer
-    const logoLayer = document.querySelector('.bms-floating-logos-container')
-    let ticking = false
+    const logoNodes = [
+      { sel: '.bms-float-1 .bms-logo-inner', factorX: 90, factorY: 70, rotFactor: 18 },
+      { sel: '.bms-float-2 .bms-logo-inner', factorX: -70, factorY: -55, rotFactor: -14 },
+      { sel: '.bms-float-3 .bms-logo-inner', factorX: 110, factorY: 85, rotFactor: 22 },
+      { sel: '.bms-float-4 .bms-logo-inner', factorX: -50, factorY: -40, rotFactor: -10 }
+    ]
 
+    let ticking = false
     const handleMouseMove = (e) => {
       if (!ticking) {
         requestAnimationFrame(() => {
           const relX = (e.clientX / window.innerWidth - 0.5)
           const relY = (e.clientY / window.innerHeight - 0.5)
-          backG.setAttribute('transform', `translate(${relX*10} ${relY*5})`)
-          frontG.setAttribute('transform', `translate(${relX*20} ${relY*8})`)
 
-          if (logoLayer) {
-            logoLayer.style.setProperty('--mouse-offset-x', `${relX * 45}px`)
-            logoLayer.style.setProperty('--mouse-offset-y', `${relY * 35}px`)
-            logoLayer.style.setProperty('--mouse-tilt', `${relX * 12}deg`)
-          }
+          backG.setAttribute('transform', `translate(${relX*12} ${relY*6})`)
+          frontG.setAttribute('transform', `translate(${relX*22} ${relY*10})`)
+
+          logoNodes.forEach(item => {
+            const el = document.querySelector(item.sel)
+            if (el) {
+              const moveX = relX * item.factorX
+              const moveY = relY * item.factorY
+              const tilt = relX * item.rotFactor
+              el.style.transform = `translate3d(${moveX}px, ${moveY}px, 0) rotate(${tilt}deg)`
+            }
+          })
+
           ticking = false
         })
         ticking = true
@@ -236,18 +248,26 @@ function Login({ onLogin }) {
       </div>
 
       {/* Floating Animated BMS Logos in background */}
-      <div className="bms-floating-logos-container" aria-hidden="true">
+      <div className="bms-floating-logos-container" ref={logosRef} aria-hidden="true">
         <div className="bms-floating-logo bms-float-1">
-          <img src="/bms-logo-animated.svg" alt="BMS Animated" />
+          <div className="bms-logo-inner">
+            <img src="/bms-logo-animated.svg" alt="BMS Animated" draggable="false" />
+          </div>
         </div>
         <div className="bms-floating-logo bms-float-2">
-          <img src="/bms-logo-animated.svg" alt="BMS Animated" />
+          <div className="bms-logo-inner">
+            <img src="/bms-logo-animated.svg" alt="BMS Animated" draggable="false" />
+          </div>
         </div>
         <div className="bms-floating-logo bms-float-3">
-          <img src="/bms-logo-animated.svg" alt="BMS Animated" />
+          <div className="bms-logo-inner">
+            <img src="/bms-logo-animated.svg" alt="BMS Animated" draggable="false" />
+          </div>
         </div>
         <div className="bms-floating-logo bms-float-4">
-          <img src="/bms-logo-animated.svg" alt="BMS Animated" />
+          <div className="bms-logo-inner">
+            <img src="/bms-logo-animated.svg" alt="BMS Animated" draggable="false" />
+          </div>
         </div>
       </div>
 
