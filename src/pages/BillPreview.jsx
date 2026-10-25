@@ -95,9 +95,9 @@ function BillPreview() {
         month: bill.month || '',
         year: bill.year || '',
         billType: bill.billType || 'both',
-        electricityPreviousReading: bill.electricityPreviousReading ?? '',
+        electricityPreviousReading: bill.electricityPreviousReading ?? tenant?.electricityStartUnit ?? '',
         electricityCurrentReading: bill.electricityCurrentReading ?? '',
-        waterPreviousReading: bill.waterPreviousReading ?? '',
+        waterPreviousReading: bill.waterPreviousReading ?? tenant?.waterStartUnit ?? '',
         waterCurrentReading: bill.waterCurrentReading ?? '',
         rent: bill.rent || 0,
         electricity: bill.electricity || 0,
@@ -114,15 +114,15 @@ function BillPreview() {
 
   // Real-time calculations inside the Edit Modal
   const getElecCalc = () => {
-    const rawPrev = editForm.electricityPreviousReading !== '' ? editForm.electricityPreviousReading : bill?.electricityPreviousReading;
+    const rawPrev = editForm.electricityPreviousReading !== '' ? editForm.electricityPreviousReading : (bill?.electricityPreviousReading ?? tenant?.electricityStartUnit ?? 0);
     const rawCurr = editForm.electricityCurrentReading !== '' ? editForm.electricityCurrentReading : bill?.electricityCurrentReading;
     if (rawPrev == null || rawCurr == null || rawPrev === '' || rawCurr === '') return null;
     const prev = parseFloat(rawPrev) || 0;
     const current = parseFloat(rawCurr) || 0;
     const units = Math.max(0, current - prev);
-    const unitCost = units * (tenant.electricityRate || 0);
+    const unitCost = units * (tenant?.electricityRate || 0);
     const globalDemandRate = settings.electricityDemandRate ?? 90;
-    const demandCharge = (tenant.sectionLoad || 0) * globalDemandRate;
+    const demandCharge = (tenant?.sectionLoad || 0) * globalDemandRate;
     const subTotal = unitCost + demandCharge;
     const vatRate = (settings.electricityVatRate ?? 5) / 100;
     const vat = subTotal * vatRate;
@@ -130,13 +130,13 @@ function BillPreview() {
   }
 
   const getWaterCalc = () => {
-    const rawPrev = editForm.waterPreviousReading !== '' ? editForm.waterPreviousReading : bill?.waterPreviousReading;
+    const rawPrev = editForm.waterPreviousReading !== '' ? editForm.waterPreviousReading : (bill?.waterPreviousReading ?? tenant?.waterStartUnit ?? 0);
     const rawCurr = editForm.waterCurrentReading !== '' ? editForm.waterCurrentReading : bill?.waterCurrentReading;
     if (rawPrev == null || rawCurr == null || rawPrev === '' || rawCurr === '') return null;
     const prev = parseFloat(rawPrev) || 0;
     const current = parseFloat(rawCurr) || 0;
     const units = Math.max(0, current - prev);
-    const waterCharge = units * (tenant.waterRate || 0);
+    const waterCharge = units * (tenant?.waterRate || 0);
     const sewerageCharge = waterCharge;
     const subTotal = waterCharge + sewerageCharge;
     const vatRate = (settings.waterVatRate ?? 15) / 100;
@@ -158,10 +158,10 @@ function BillPreview() {
     const hasElec = editForm.billType !== 'water';
     const hasWater = editForm.billType !== 'electricity';
 
-    const ePrev = hasElec ? (parseFloat(editForm.electricityPreviousReading) >= 0 ? parseFloat(editForm.electricityPreviousReading) : (bill.electricityPreviousReading ?? null)) : null;
+    const ePrev = hasElec ? (parseFloat(editForm.electricityPreviousReading) >= 0 ? parseFloat(editForm.electricityPreviousReading) : (bill.electricityPreviousReading ?? tenant?.electricityStartUnit ?? 0)) : null;
     const eCurr = hasElec ? (parseFloat(editForm.electricityCurrentReading) >= 0 ? parseFloat(editForm.electricityCurrentReading) : (bill.electricityCurrentReading ?? null)) : null;
 
-    const wPrev = hasWater ? (parseFloat(editForm.waterPreviousReading) >= 0 ? parseFloat(editForm.waterPreviousReading) : (bill.waterPreviousReading ?? null)) : null;
+    const wPrev = hasWater ? (parseFloat(editForm.waterPreviousReading) >= 0 ? parseFloat(editForm.waterPreviousReading) : (bill.waterPreviousReading ?? tenant?.waterStartUnit ?? 0)) : null;
     const wCurr = hasWater ? (parseFloat(editForm.waterCurrentReading) >= 0 ? parseFloat(editForm.waterCurrentReading) : (bill.waterCurrentReading ?? null)) : null;
 
     const eCalc = hasElec && ePrev != null && eCurr != null ? getElecCalc() : null;
@@ -253,8 +253,8 @@ function BillPreview() {
   const billItems = settings.billItems || ['rent', 'electricity', 'water', 'gas', 'serviceCharge', 'otherCharges']
   
   const showRent = billItems.includes('rent') && bill.rent > 0
-  const showElectricity = billItems.includes('electricity') && bill.electricity > 0
-  const showWater = billItems.includes('water') && bill.water > 0
+  const showElectricity = billItems.includes('electricity') && (bill.electricity > 0 || (bill.billType !== 'water' && (bill.electricityCurrentReading != null || (bill.electricityUnits != null && bill.electricityUnits > 0))))
+  const showWater = billItems.includes('water') && (bill.water > 0 || (bill.billType !== 'electricity' && (bill.waterCurrentReading != null || (bill.waterUnits != null && bill.waterUnits > 0))))
   const showGas = billItems.includes('gas') && bill.gas > 0
   const showServiceCharge = billItems.includes('serviceCharge') && bill.serviceCharge > 0
   const showOtherCharges = billItems.includes('otherCharges') && bill.otherCharges > 0
@@ -672,7 +672,7 @@ function BillPreview() {
           </div>
 
           {/* Electricity readings */}
-          {showElectricity && bill.electricityUnits != null && (
+          {showElectricity && (bill.electricityUnits != null || bill.electricityCurrentReading != null) && (
             <>
               <div className="section-label"><div className="dot"></div><span>Electricity — Meter Reading</span><div className="line"></div></div>
               <table className="reading-table">
@@ -680,9 +680,9 @@ function BillPreview() {
                   <tr><th>Reading</th><th>Date</th><th className="num">Unit (Flat Rate)</th><th className="num">Amount</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td>Current</td><td>{formatDate(bill.createdAt)}</td><td className="num">{bill.electricityCurrentReading}</td><td className="num">—</td></tr>
-                  <tr><td>Previous</td><td>—</td><td className="num">{bill.electricityPreviousReading}</td><td className="num">—</td></tr>
-                  <tr><td>Unit Used</td><td>—</td><td className="num">{bill.electricityUnits} Unit</td><td className="num">—</td></tr>
+                  <tr><td>Current</td><td>{formatDate(bill.createdAt)}</td><td className="num">{bill.electricityCurrentReading ?? '—'}</td><td className="num">—</td></tr>
+                  <tr><td>Previous</td><td>—</td><td className="num">{bill.electricityPreviousReading ?? '—'}</td><td className="num">—</td></tr>
+                  <tr><td>Unit Used</td><td>—</td><td className="num">{bill.electricityUnits ?? 0} Unit</td><td className="num">—</td></tr>
                   <tr><td>Rate per Unit</td><td>—</td><td className="num">—</td><td className="num">{formatCurrency(tenant.electricityRate)}/Unit</td></tr>
                 </tbody>
               </table>
@@ -690,7 +690,7 @@ function BillPreview() {
           )}
 
           {/* Water readings */}
-          {showWater && bill.waterUnits != null && (
+          {showWater && (bill.waterUnits != null || bill.waterCurrentReading != null) && (
             <>
               <div className="section-label"><div className="dot"></div><span>Water &amp; Sewerage — Meter Reading</span><div className="line"></div></div>
               <table className="reading-table">
@@ -698,9 +698,9 @@ function BillPreview() {
                   <tr><th>Reading</th><th>Date</th><th className="num">Unit</th><th className="num">Amount</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td>Current</td><td>{formatDate(bill.createdAt)}</td><td className="num">{bill.waterCurrentReading}</td><td className="num">—</td></tr>
-                  <tr><td>Previous</td><td>—</td><td className="num">{bill.waterPreviousReading}</td><td className="num">—</td></tr>
-                  <tr><td>Unit Used</td><td>—</td><td className="num">{bill.waterUnits} Unit</td><td className="num">—</td></tr>
+                  <tr><td>Current</td><td>{formatDate(bill.createdAt)}</td><td className="num">{bill.waterCurrentReading ?? '—'}</td><td className="num">—</td></tr>
+                  <tr><td>Previous</td><td>—</td><td className="num">{bill.waterPreviousReading ?? '—'}</td><td className="num">—</td></tr>
+                  <tr><td>Unit Used</td><td>—</td><td className="num">{bill.waterUnits ?? 0} Unit</td><td className="num">—</td></tr>
                   <tr><td>Rate per Unit</td><td>—</td><td className="num">—</td><td className="num">{formatCurrency(tenant.waterRate)}/Unit</td></tr>
                 </tbody>
               </table>
