@@ -197,38 +197,72 @@ function createStore(table) {
 
     add: async (item) => {
       const id = item.id || crypto.randomUUID();
-      const dbRow = toDb({ ...item, id, createdAt: new Date().toISOString() });
-      const { data, error } = await supabase.from(table).insert([dbRow]).select().single();
-      if (error) { 
-        console.error('Add error:', error.message); 
-        alert(`Supabase Error (${table}): ${error.message}`);
-        return null; 
+      const localItem = { ...item, id, createdAt: new Date().toISOString() };
+      try {
+        const dbRow = toDb(localItem);
+        const { data, error } = await supabase.from(table).insert([dbRow]).select().single();
+        if (error) { 
+          console.error('Add error:', error.message); 
+          alert(`Supabase Error (${table}): ${error.message}`);
+          return null; 
+        }
+        const converted = fromDb(data);
+        cache[table] = [...(cache[table] || []), converted];
+        localStorage.setItem('sb_'+table, JSON.stringify(cache[table]));
+        window.dispatchEvent(new Event('storeUpdated'));
+        return converted;
+      } catch (err) {
+        console.error('Add network/server error:', err);
+        // Fallback to local cache so data is not lost
+        cache[table] = [...(cache[table] || []), localItem];
+        localStorage.setItem('sb_'+table, JSON.stringify(cache[table]));
+        window.dispatchEvent(new Event('storeUpdated'));
+        alert(`Supabase Connection Error (${table}): ${err.message || 'Server unreachable or paused'}. Saved to local cache.`);
+        return localItem;
       }
-      const converted = fromDb(data);
-      cache[table] = [...(cache[table] || []), converted];
-      localStorage.setItem('sb_'+table, JSON.stringify(cache[table]));
-      window.dispatchEvent(new Event('storeUpdated'));
-      return converted;
     },
 
     update: async (id, updates) => {
-      const dbUpdates = toDb({ ...updates, updatedAt: new Date().toISOString() });
-      const { data, error } = await supabase.from(table).update(dbUpdates).eq('id', id).select().single();
-      if (error) { console.error('Update error:', error.message); return null; }
-      const converted = fromDb(data);
-      cache[table] = (cache[table] || []).map(r => r.id === id ? converted : r);
-      localStorage.setItem('sb_'+table, JSON.stringify(cache[table]));
-      window.dispatchEvent(new Event('storeUpdated'));
-      return converted;
+      const localItem = { ...(cache[table] || []).find(r => r.id === id), ...updates, updatedAt: new Date().toISOString() };
+      try {
+        const dbUpdates = toDb({ ...updates, updatedAt: new Date().toISOString() });
+        const { data, error } = await supabase.from(table).update(dbUpdates).eq('id', id).select().single();
+        if (error) { 
+          console.error('Update error:', error.message); 
+          alert(`Supabase Error (${table}): ${error.message}`);
+          return null; 
+        }
+        const converted = fromDb(data);
+        cache[table] = (cache[table] || []).map(r => r.id === id ? converted : r);
+        localStorage.setItem('sb_'+table, JSON.stringify(cache[table]));
+        window.dispatchEvent(new Event('storeUpdated'));
+        return converted;
+      } catch (err) {
+        console.error('Update network/server error:', err);
+        // Fallback to local cache so user's edit reflects on invoice
+        cache[table] = (cache[table] || []).map(r => r.id === id ? localItem : r);
+        localStorage.setItem('sb_'+table, JSON.stringify(cache[table]));
+        window.dispatchEvent(new Event('storeUpdated'));
+        alert(`Supabase Connection Error (${table}): ${err.message || 'Server unreachable or paused'}. Updated in local storage.`);
+        return localItem;
+      }
     },
 
     remove: async (id) => {
-      const { error } = await supabase.from(table).delete().eq('id', id);
-      if (error) { console.error('Delete error:', error.message); return false; }
-      cache[table] = (cache[table] || []).filter(r => r.id !== id);
-      localStorage.setItem('sb_'+table, JSON.stringify(cache[table]));
-      window.dispatchEvent(new Event('storeUpdated'));
-      return true;
+      try {
+        const { error } = await supabase.from(table).delete().eq('id', id);
+        if (error) { console.error('Delete error:', error.message); return false; }
+        cache[table] = (cache[table] || []).filter(r => r.id !== id);
+        localStorage.setItem('sb_'+table, JSON.stringify(cache[table]));
+        window.dispatchEvent(new Event('storeUpdated'));
+        return true;
+      } catch (err) {
+        console.error('Delete network/server error:', err);
+        cache[table] = (cache[table] || []).filter(r => r.id !== id);
+        localStorage.setItem('sb_'+table, JSON.stringify(cache[table]));
+        window.dispatchEvent(new Event('storeUpdated'));
+        return true;
+      }
     }
   };
 }
