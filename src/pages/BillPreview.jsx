@@ -205,8 +205,11 @@ function BillPreview() {
 
     try {
       const res = await billStore.update(bill.id, updatedData);
-      const mergedBill = res || { ...bill, ...updatedData };
-      setBill(mergedBill);
+      if (!res) {
+        // billStore.update already showed an alert
+        return;
+      }
+      setBill(res);
 
       // Keep meterReadingStore in sync if meter reading record exists
       try {
@@ -231,9 +234,7 @@ function BillPreview() {
       setShowEditModal(false);
     } catch (err) {
       console.error('Error updating bill:', err);
-      setBill(prev => ({ ...prev, ...updatedData }));
-      setShowEditModal(false);
-      alert('Updated locally! Note: Supabase connection warning: ' + (err.message || err));
+      alert('Database Connection Error: ' + (err.message || err));
     }
   }
 
