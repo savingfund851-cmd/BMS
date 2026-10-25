@@ -280,10 +280,37 @@ export const meterReadingStore = {
   ...createStore('meter_readings'),
   getPreviousElectricityReading: (tenantId, currentMonth, currentYear, startDate) => {
     const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const readings = (cache.meter_readings || []).filter(r => {
-      if (r.tenantId !== tenantId) return false;
-      if (r.electricityCurrentReading == null || r.electricityCurrentReading <= 0) return false;
-      // If meter was reset/changed (startDate set), ignore readings from before that date
+    const candidates = [];
+
+    // 1. Gather readings from meter_readings
+    (cache.meter_readings || []).forEach(r => {
+      if (r.tenantId === tenantId && r.electricityCurrentReading != null && r.electricityCurrentReading >= 0) {
+        candidates.push({
+          month: r.month,
+          year: Number(r.year),
+          reading: Number(r.electricityCurrentReading)
+        });
+      }
+    });
+
+    // 2. Gather readings from bills (overrides or adds, ensuring edited bills take priority)
+    (cache.bills || []).forEach(b => {
+      if (b.tenantId === tenantId && b.electricityCurrentReading != null && b.electricityCurrentReading >= 0) {
+        const idx = candidates.findIndex(c => c.month === b.month && c.year === Number(b.year));
+        if (idx >= 0) {
+          candidates[idx].reading = Number(b.electricityCurrentReading);
+        } else {
+          candidates.push({
+            month: b.month,
+            year: Number(b.year),
+            reading: Number(b.electricityCurrentReading)
+          });
+        }
+      }
+    });
+
+    // 3. Filter by startDate if meter was reset
+    const filtered = candidates.filter(r => {
       if (startDate) {
         const sd = new Date(startDate);
         const rMonth = MONTHS.indexOf(r.month);
@@ -291,21 +318,54 @@ export const meterReadingStore = {
       }
       return true;
     });
-    readings.sort((a, b) => {
+
+    // 4. Sort descending: latest year, latest month first
+    filtered.sort((a, b) => {
       if (a.year !== b.year) return b.year - a.year;
       return MONTHS.indexOf(b.month) - MONTHS.indexOf(a.month);
     });
+
     const currIdx = MONTHS.indexOf(currentMonth);
-    return readings.find(r =>
+    const prev = filtered.find(r =>
       r.year < currentYear || (r.year === currentYear && MONTHS.indexOf(r.month) < currIdx)
-    ) || null;
+    );
+
+    return prev ? { electricityCurrentReading: prev.reading, month: prev.month, year: prev.year } : null;
   },
+
   getPreviousWaterReading: (tenantId, currentMonth, currentYear, startDate) => {
     const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const readings = (cache.meter_readings || []).filter(r => {
-      if (r.tenantId !== tenantId) return false;
-      if (r.waterCurrentReading == null || r.waterCurrentReading <= 0) return false;
-      // If meter was reset/changed (startDate set), ignore readings from before that date
+    const candidates = [];
+
+    // 1. Gather readings from meter_readings
+    (cache.meter_readings || []).forEach(r => {
+      if (r.tenantId === tenantId && r.waterCurrentReading != null && r.waterCurrentReading >= 0) {
+        candidates.push({
+          month: r.month,
+          year: Number(r.year),
+          reading: Number(r.waterCurrentReading)
+        });
+      }
+    });
+
+    // 2. Gather readings from bills (overrides or adds, ensuring edited bills take priority)
+    (cache.bills || []).forEach(b => {
+      if (b.tenantId === tenantId && b.waterCurrentReading != null && b.waterCurrentReading >= 0) {
+        const idx = candidates.findIndex(c => c.month === b.month && c.year === Number(b.year));
+        if (idx >= 0) {
+          candidates[idx].reading = Number(b.waterCurrentReading);
+        } else {
+          candidates.push({
+            month: b.month,
+            year: Number(b.year),
+            reading: Number(b.waterCurrentReading)
+          });
+        }
+      }
+    });
+
+    // 3. Filter by startDate if meter was reset
+    const filtered = candidates.filter(r => {
       if (startDate) {
         const sd = new Date(startDate);
         const rMonth = MONTHS.indexOf(r.month);
@@ -313,14 +373,19 @@ export const meterReadingStore = {
       }
       return true;
     });
-    readings.sort((a, b) => {
+
+    // 4. Sort descending: latest year, latest month first
+    filtered.sort((a, b) => {
       if (a.year !== b.year) return b.year - a.year;
       return MONTHS.indexOf(b.month) - MONTHS.indexOf(a.month);
     });
+
     const currIdx = MONTHS.indexOf(currentMonth);
-    return readings.find(r =>
+    const prev = filtered.find(r =>
       r.year < currentYear || (r.year === currentYear && MONTHS.indexOf(r.month) < currIdx)
-    ) || null;
+    );
+
+    return prev ? { waterCurrentReading: prev.reading, month: prev.month, year: prev.year } : null;
   }
 };
 

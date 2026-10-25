@@ -226,6 +226,19 @@ function BillPreview() {
             waterCurrentReading: wCurr,
             waterUnits: updatedData.waterUnits
           });
+        } else if (eCurr != null || wCurr != null) {
+          await meterReadingStore.add({
+            tenantId: bill.tenantId,
+            buildingId: bill.buildingId,
+            month: updatedData.month,
+            year: updatedData.year,
+            electricityPreviousReading: ePrev,
+            electricityCurrentReading: eCurr,
+            electricityUnits: updatedData.electricityUnits,
+            waterPreviousReading: wPrev,
+            waterCurrentReading: wCurr,
+            waterUnits: updatedData.waterUnits
+          });
         }
       } catch (mErr) {
         console.warn('Meter reading sync notice:', mErr);
